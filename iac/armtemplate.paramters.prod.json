@@ -1,0 +1,84 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ResourceTags":{
+            "type": "object",
+            "defaultValue":{
+                "Owner": "jungkyul",
+                "ORGUnit":"SCL/EDU",
+                "Department":"SCL/EDU",
+                "Environment":"Production",
+                "Application":"clic"
+            },
+            "allowedValues": [
+                {
+                    "Owner": "jungkyul",
+                    "ORGUnit":"SCL/EDU",
+                    "Department":"SCL/EDU",
+                    "Environment":"Production",
+                    "Application":"clic"
+                }
+            ],
+            "metadata": {
+                "description": "Resource Owner. Must be Staff. e.g: josem. IDB ORG Unit and IBD Department Unit"
+            }
+        },
+        "Environment": {
+            "type": "string",
+            "defaultValue": "Prod",
+            "allowedValues": [
+                "Dev",
+                "Test",
+                "Prod"
+            ],
+            "metadata": {
+                "description": "The type of replication to use for the EnvironmentType."
+            }
+        },
+        "Name-Project": {
+            "type": "string",
+            "metadata": {
+                "description": "Project Name"
+            }
+
+        },
+        "AppService1-Sku":{
+            "type": "object",
+            "defaultValue": {
+                "name": "B1",
+                "tier": "Basic",
+                "size": "B1",
+                "family": "B",
+                "capacity": 1
+            },
+            "allowedValues": [
+                {
+                    "name": "B1",
+                    "tier": "Basic",
+                    "size": "B1",
+                    "family": "B",
+                    "capacity": 1
+                },
+                {
+                    "name": "S1",
+                    "tier": "Standard",
+                    "size": "S1",
+                    "family": "S",
+                    "capacity": 1
+                },
+                {
+                    "name": "P1v2",
+                    "tier": "PremiumV2",
+                    "size": "P1v2",
+                    "family": "Pv2",
+                    "capacity": 2
+                }
+            ],
+            "metadata": {
+                "description": "Service Plan Sku"
+            }
+        }
+    }
+}
+

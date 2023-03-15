@@ -1,0 +1,43 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ResourceTags":{
+            "value":{
+                "Owner": "jungkyul",
+                "ORGUnit":"SCL/EDU",
+                "Department":"SCL/EDU",
+                "Environment":"Development",
+                "Application":"clic"
+            }
+        },
+        "Environment": {
+            "value": "Dev"
+        },
+        "resource_group": {
+            "value": "rg-np-use2" 
+            },
+        "Name-Project": {
+            "value": "CLIC"
+        },
+        "AppService1-Sku":{
+            "value": {
+                "name": "B1",
+                "tier": "Basic",
+                "size": "B1",
+                "family": "B",
+                "capacity": 1
+            }
+        },
+        "vnetResourceGroup":{
+            "value":"rg-np-use2"
+        },
+        "vnetName":{
+            "value":"vnet-np-use2-extended"
+        },
+        "subnetName":{
+            "value":"sn-asp-np-wa1-dev-clic"
+        }
+    }
+}
+

@@ -1,0 +1,316 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ResourceTags":{
+            "type": "object",
+             "metadata": {
+                "description": "Resource Owner. Must be Staff. e.g: josem. IDB ORG Unit and IBD Department Unit"
+            }
+        },
+        "Environment": {
+            "type": "string",
+            "metadata": {
+                "description": "The type of replication to use for the EnvironmentType."
+            }
+        },
+        "Name-Project": {
+            "type": "string",
+            "metadata": {
+                "description": "Project Name"
+            }
+        },
+        "AppService1-Sku":{
+            "type": "object",
+            "metadata": {
+                "description": "Service Plan Sku"
+            }
+        },
+        "vnetResourceGroup":{
+            "type":"string",
+            "metadata":{
+                "description":"Resource group of the Vnet"
+            }
+        },
+        "vnetName":{
+            "type":"string",
+            "metadata":{
+                "description":"Virtual Network name"
+            }
+        },
+        "subnetName":{
+            "type":"string",
+            "metadata":{
+                "description":"Sub network name"
+            }
+        }
+    },
+    "variables":{
+        "Resource_Common_String" : "[toLower(concat(if(equals(parameters('Environment'),'Prod'),'p','np'),'-',parameters('Environment'),'-',parameters('Name-Project')))]",
+        "StorageAccounts-Name": "[replace(concat('sa-',variables('Resource_Common_String')),'-','')]",
+        "Insight-Name": "[concat('appinsights-',variables('Resource_Common_String'))]",
+        "AppService-Front-Name": "[concat('wa2-',variables('Resource_Common_String'))]",
+        "AppService-API-PlanName": "[concat('sp1-',variables('Resource_Common_String'))]"
+    },
+    "resources": [
+        
+       // virtual network must have resource group Network
+
+       {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2022-07-01",
+            "name": "[parameters('vnetName')]",
+            "location": "eastus2",
+            "dependsOn": [],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.195.133.192/27"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('subnetName')]",
+                        "subnetResourceId": "[resourceId(parameters('vnetResourceGroup'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnetName'))]",
+                        "properties": {
+                            "addressPrefix": "10.195.133.192/27",
+                            "serviceEndpoints": [
+                                {
+                                    "service": "Microsoft.Storage",
+                                    "locations": [
+                                        "eastus2"
+                                    ]
+                                }
+                            ],
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    }
+                    
+                ],
+                "virtualNetworkPeerings": [],
+                "enableDdosProtection": false
+            }
+        },
+
+        // sub net sn-asp-np-wa1-dev-clic
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2022-07-01",
+            "name": "[concat(parameters('vnetName'), '/',parameters('subnetName'))]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+            ],
+            "properties": {
+                "addressPrefix": "10.195.133.192/27",
+                "serviceEndpoints": [
+                    {
+                        "service": "Microsoft.Storage",
+                        "locations": [
+                            "eastus2"
+                        ]
+                    }
+                ],
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Disabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+        },
+        // Application Insight
+        {
+            "type": "microsoft.insights/components",
+            "apiVersion": "2020-02-02-preview",
+            "kind": "string",
+            "name": "[variables('Insight-Name')]",
+            "location": "[resourceGroup().location]",
+            "tags": "[parameters('ResourceTags')]",
+            "properties": {
+                "ApplicationId": "[variables('Insight-Name')]",
+                "Application_Type": "web",
+                "Flow_Type": "Bluefield",
+                "Request_Source": "rest"
+            }
+        }, 
+        // Create Storage
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2021-06-01",
+            "name": "[variables('StorageAccounts-Name')]",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "StorageV2",
+            "tags": "[parameters('ResourceTags')]",
+            "properties": {
+                "defaultToOAuthAuthentication": true,
+                "allowCrossTenantReplication": true,
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": true,
+                "allowSharedKeyAccess": true,
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "requireInfrastructureEncryption": false,
+                    "services": {
+                        "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "blob": {
+                            "keyType": "Account",
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+            }
+        },
+        // Create Blob
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices",
+            "apiVersion": "2021-06-01",
+            "name": "[concat(variables('StorageAccounts-Name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('StorageAccounts-Name'))]"
+            ],
+            "tags": "[parameters('ResourceTags')]",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "changeFeed": {
+                    "enabled": false
+                },
+                "restorePolicy": {
+                    "enabled": false
+                },
+                "containerDeleteRetentionPolicy": {
+                    "enabled": true,
+                    "days": 7
+                },
+                "cors": {
+                    "corsRules": []
+                },
+                "deleteRetentionPolicy": {
+                    "enabled": true,
+                    "days": 7
+                },
+                "isVersioningEnabled": false
+                
+            }
+        },
+        // Create Blob Container
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2021-06-01",
+            "name": "[concat(variables('StorageAccounts-Name'), '/default/cdn')]",
+            "tags": "[parameters('ResourceTags')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('StorageAccounts-Name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('StorageAccounts-Name'))]"
+            ],
+            "properties": {
+                "immutableStorageWithVersioning": {
+                    "enabled": false
+                },
+                "defaultEncryptionScope": "$account-encryption-key",
+                "denyEncryptionScopeOverride": false,
+                "publicAccess": "Container"
+            }
+        },
+        // Web App Service Plan
+
+        {
+            "apiVersion": "2021-02-01",
+            "type": "Microsoft.Web/serverfarms",
+            "name": "[variables('AppService-API-PlanName')]",
+            "location": "[resourceGroup().location]",
+            "tags": "[parameters('ResourceTags')]",
+            "sku": "[parameters('AppService1-Sku')]",
+            "kind": "linux",
+            "properties": {
+                "name": "[variables('AppService-API-PlanName')]",
+                "reserved": true,
+                "zoneRedundant": false
+            }
+        },
+        // Web App Service
+        
+        // App Front
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2021-02-01",
+            "name": "[variables('AppService-Front-Name')]",
+            "location": "[resourceGroup().location]",
+            "tags": "[parameters('ResourceTags')]",
+            "kind": "app",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('AppService-API-PlanName'))]",
+                "[resourceId('Microsoft.Insights/components', variables('Insight-Name'))]"
+            ],
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(variables('AppService-Front-Name'), '.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "[concat(variables('AppService-Front-Name'), '.scm.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('AppService-API-PlanName'))]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId(resourceGroup().name,'Microsoft.Insights/components', variables('Insight-Name')), '2015-05-01', 'Full').properties.InstrumentationKey]"
+                        },
+                        {
+                            "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                            "value": "[reference(resourceId(resourceGroup().name,'Microsoft.Insights/components', variables('Insight-Name')), '2015-05-01', 'Full').properties.ConnectionString]"
+                        },/*
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('@Microsoft.KeyVault(SecretUri=https://',variables('KeyVault-Name'),'.vault.azure.net/secrets/', variables('StorageAccountConnectionString'),')')]"
+                        },*/
+                        {
+                            "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "XDT_MicrosoftApplicationInsights_Mode",
+                            "value": "default"
+                        }
+                    ],
+                    "numberOfWorkers": 1,
+                    "linuxFxVersion": "TOMCAT|9.0-jre8",
+                    "alwaysOn": true,
+                    "http20Enabled": false,
+                    "functionAppScaleLimit": 0,
+                    "minimumElasticInstanceCount": 1,
+                    "ftpsState": "Disabled"
+                },
+                "httpsOnly": true
+            },
+            "identity": {
+                "type": "SystemAssigned"
+            }
+        }
+    ]
+}
+

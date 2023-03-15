@@ -1,0 +1,111 @@
+#!groovy
+
+// Copyright (c) 2022 Enterprise Architecture <itearchitecture@iadb.org>
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+
+// You should use a compatible version of pipeline utils according to you Job.
+// Reach Enterprise Architecture team for more information.
+def pipelineUtilsVersion = "2.0"
+
+// Reach Enterprise Architecture team to get this information.
+def projectKey = "${env.CLIC_WEB_KEY}"
+def projectName = "${env.CLIC_WEB_NAME}"
+
+// Folder structure that separete the different Jobs.
+// Change only if needed.
+def wsDir = "${WORKSPACE_ROOT}${projectKey}\\${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+
+// URLs of Microsoft Office 365 Webhooks to receive notifications.
+// Multiple URLs are supported.
+//
+// Can be configured as a Teams Connector, please refer to the link below on how to configure it.
+// https://idbg.sharepoint.com/:w:/s/EnterpriseArchitecture/EWNMqsUrRidHtOClNl-vLTwBCJadNZDRy9t5HW15n3enjw?e=LRc88q
+String[] microsoftTeamsWebhooks = ["", ""]
+
+// Interval variables. Please do not remove them.
+def err = null
+def utils = null
+currentBuild.result = "SUCCESS"
+String[] automaticDeploymentBranches = ["non-prod"]
+
+node('master') {
+    ws (wsDir) {  
+        try {
+            // This step will checkout the most updated code in the current branch from Bitbucket.
+            stage('Checking out code') {
+                checkout scm
+            }
+
+            // ╔═╗┬  ┌─┐┌─┐┌─┐┌─┐  ┌┬┐┌─┐┌┐┌┌┬┐  ┌─┐┬ ┬┌─┐┌┐┌┌─┐┌─┐  ┌┬┐┬ ┬┬┌─┐  ┌─┐┌┬┐┌─┐┌─┐
+            // ╠═╝│  ├┤ ├─┤└─┐├┤    │││ ││││ │   │  ├─┤├─┤││││ ┬├┤    │ ├─┤│└─┐  └─┐ │ ├┤ ├─┘
+            // ╩  ┴─┘└─┘┴ ┴└─┘└─┘  ─┴┘└─┘┘└┘ ┴   └─┘┴ ┴┴ ┴┘└┘└─┘└─┘   ┴ ┴ ┴┴└─┘  └─┘ ┴ └─┘┴  
+            stage('Loading pipeline utils') {
+                bat "${env.GET_LATEST_PIPELINE_UTILS} ${pipelineUtilsVersion}"
+                utils = load "${env.PIPELINE_UTILS_FILE}"            
+            }
+
+            //In this step you should use nuget to download all dependencies of your Solution.
+            //For the build process to work correctly, all the dependencies should be handled by Nuget.
+            stage('Downloading dependencies') {
+                bat 'mvn dependency:resolve'
+            }
+
+            //The building steps for your project should be listed in here. Depending on the application more then one steps are necessary.
+            stage('Building and compiling') {
+                bat 'mvn clean install'
+            }
+
+            stage('Scanning Java project') {
+                utils.scanJava(projectKey, projectName, wsDir)
+            }
+
+            // ╔═╗┬  ┌─┐┌─┐┌─┐┌─┐  ┌┬┐┌─┐┌┐┌┌┬┐  ┌─┐┬ ┬┌─┐┌┐┌┌─┐┌─┐  ┌┬┐┬ ┬┬┌─┐  ┌─┐┌┬┐┌─┐┌─┐
+            // ╠═╝│  ├┤ ├─┤└─┐├┤    │││ ││││ │   │  ├─┤├─┤││││ ┬├┤    │ ├─┤│└─┐  └─┐ │ ├┤ ├─┘
+            // ╩  ┴─┘└─┘┴ ┴└─┘└─┘  ─┴┘└─┘┘└┘ ┴   └─┘┴ ┴┴ ┴┘└┘└─┘└─┘   ┴ ┴ ┴┴└─┘  └─┘ ┴ └─┘┴  
+            stage('Executing post-actions') {
+                utils.postActions(projectKey, projectName)
+            }
+            
+            stage('Sending deployable package to Artifactory') {
+                utils.uploadFileToArtifactory(projectKey, null, "pom.xml", "JAVA")
+            }
+            
+            if(utils.shouldStartAutomaticRelease(automaticDeploymentBranches)) {
+                stage('Starting automated release') {
+                    build job: "CLIC - clic.web/Release Orchestrator/Full Release", parameters: [string(name: "environment",value: "Automated"), string(name: "artifact",value: "")], wait: false
+                }
+            }
+        }
+        catch (caughtError) {
+            err = caughtError
+            currentBuild.result = "FAILURE"
+        }
+        finally {
+            stage('Cleanning workspace') {
+                cleanWs()
+                deleteDir()
+                utils.notifyBuildStatus(microsoftTeamsWebhooks)
+            }
+            if (err) {
+                throw err
+            }
+        }
+    }
+}

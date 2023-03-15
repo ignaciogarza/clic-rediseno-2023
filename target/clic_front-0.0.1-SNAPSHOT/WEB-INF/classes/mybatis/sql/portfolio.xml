@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.iscreammedia.clic.front.repository.PortfolioRepository">	
+	
+	<select id="getPortfolioList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.PortfolioDomain">
+		SELECT 	/*	PortfolioRepository.getPortfolioList  포토폴리오 조회  */
+			a.PORTFOLIO_ID 			AS portfolioId, 
+			a.USER_ID				AS userId, 
+			ISNULL((SELECT FRIEND_STATUS_CODE FROM T_FRIEND C WHERE b.USER_ID = C.FRIEND_ID AND C.USER_ID = #{myuserId}), '0000' ) AS friendStatusCode,
+			b.EMAIL 				AS email,
+			a.SEQUENCE				AS sequence,
+			a.NAME 					AS name, 
+			a.PUBLIC_TYPE_CODE		AS publicTypeCode,
+			a.INTRODUCTION			AS introduction, 
+			a.LIST_IMAGE_PATH		AS listImagePath, 
+			a.BACKGROUND_IMAGE_PATH	AS backgroundImagePath, 
+			a.IS_USE_QR				AS isUseQr,
+			a.TAG					AS tag,
+			a.IS_DELETE				AS isDelete, 
+			a.LIKE_COUNT			AS likeCount, 
+			a.PROJECT_COUNT			AS projectCount, 
+			a.CREATED_DATE			AS createdDate, 
+			a.UPDATED_DATE			AS updatedDate		
+		FROM T_PORTFOLIO		a, T_USER b
+		WHERE 	 1=1
+		AND a.USER_ID = b.USER_ID 
+		AND a.USER_ID = #{userId}
+		AND a.IS_DELETE = 'N'
+		ORDER BY a.UPDATED_DATE DESC
+	</select>
+	
+	<select id="getPortfolioDetailInfo" parameterType="map" resultType="com.iscreammedia.clic.front.domain.PortfolioDomain">
+		SELECT 		/*	PortfolioRepository.getPortfolioDetailInfo  포토폴리오 상세 조회  */
+			PORTFOLIO_ID 			AS portfolioId, 
+			USER_ID					AS userId, 
+			SEQUENCE				AS sequence,
+			NAME 					AS name, 
+			PUBLIC_TYPE_CODE		AS publicTypeCode,
+			INTRODUCTION			AS introduction, 
+			LIST_IMAGE_PATH			AS listImagePath, 
+			BACKGROUND_IMAGE_PATH	AS backgroundImagePath, 
+			IS_USE_QR				AS isUseQr,
+			TAG						AS tag,
+			IS_DELETE				AS isDelete, 
+			LIKE_COUNT				AS likeCount, 
+			PROJECT_COUNT			AS projectCount, 
+			CREATED_DATE			AS createdDate, 
+			UPDATED_DATE			AS updatedDate		
+		FROM T_PORTFOLIO		
+		WHERE USER_ID = #{userId}
+		AND PORTFOLIO_ID = #{portfolioId}
+	</select>
+	
+	
+	<insert id="insertPortfolio" parameterType="map">
+		INSERT INTO T_PORTFOLIO   /*	 PortfolioRepository.insertPortfolio   포토폴리오저장   */
+		(			
+			USER_ID,
+			<!-- SEQUENCE, -->
+			NAME,
+			PUBLIC_TYPE_CODE,
+			INTRODUCTION,
+			LIST_IMAGE_PATH,
+			BACKGROUND_IMAGE_PATH,
+			IS_USE_QR,
+			TAG,
+			IS_DELETE,
+			LIKE_COUNT,
+			PROJECT_COUNT,
+			CREATED_DATE,
+			UPDATED_DATE		
+		)
+		VALUES
+		(
+			#{userId},	
+			<!-- (SEQUENCE +1) ,	 -->	
+			<!-- #{sequence},	 -->		
+			#{name},
+			#{publicTypeCode},
+			#{introduction},
+			#{listImagePath},
+			#{backgroundImagePath},
+			#{isUseQr},
+			#{tag},
+			'N',
+			0,
+			0,
+			GETDATE(),
+			GETDATE()
+			
+		)
+	</insert>
+	
+	<update id="updatePortfolio" parameterType="map"  >
+		UPDATE T_PORTFOLIO	/*	PortfolioRepository.updatePortfolio  포토폴리오 수정  */
+			SET					
+				NAME = #{name},
+				<!-- PUBLIC_TYPE_CODE = #{publicTypeCode}, -->
+				INTRODUCTION = #{introduction},
+				<if test="listImagePath != null">
+					LIST_IMAGE_PATH = #{listImagePath},
+				</if>
+				<if test="backgroundImagePath != null">
+					BACKGROUND_IMAGE_PATH = #{backgroundImagePath},
+				</if>
+				PUBLIC_TYPE_CODE = #{publicTypeCode},
+				IS_USE_QR = #{isUseQr},
+				TAG = #{tag},
+				UPDATED_DATE = GETDATE()
+		WHERE USER_ID = #{userId}
+		AND PORTFOLIO_ID = #{portfolioId}
+	</update>
+	
+	<update id="delPortfolio" parameterType="map"  >
+		UPDATE T_PORTFOLIO	/*	PortfolioRepository.delPortfolio  포토폴리오 삭제 조회  */
+			SET					
+				IS_DELETE	= 'Y'
+		WHERE USER_ID = #{userId}
+		AND PORTFOLIO_ID = #{portfolioId}
+	</update>
+	
+	
+	<select id="getProjectCount" parameterType="map" resultType="String">
+		SELECT 		/*	PortfolioRepository.getProjectCount  포토폴리오 프로젝트 카운트 조회  */			
+			PROJECT_COUNT 
+		FROM T_PORTFOLIO		
+		WHERE USER_ID = #{userId}
+		AND PORTFOLIO_ID = #{portfolioId}
+	</select>
+	
+	<update id="updateProjectCount" parameterType="map"  >		
+		UPDATE T_PORTFOLIO 		/*	PortfolioRepository.updateProjectCount  포토폴리오 프로젝트 카운트 증가 수정  */
+			<if test='type.equals("Y")'>			
+				SET PROJECT_COUNT = (PROJECT_COUNT +1) 
+			</if>
+			<if test='type.equals("N")'>		
+				SET PROJECT_COUNT = (PROJECT_COUNT -1) 
+			</if>
+		WHERE 	PORTFOLIO_ID = #{portfolioId}
+		<!-- WHERE   USER_ID = #{userId}
+		AND PORTFOLIO_ID = #{portfolioId} -->
+	</update>
+	
+	<select id="getCodeList" parameterType="String" resultType="com.iscreammedia.clic.front.domain.CommonDomain">
+		SELECT 
+			MAJOR		AS major, 
+			MINOR		AS minor, 
+			NAME_KOR	AS nameKor, 			
+			NAME_ENG	AS nameEng, 
+			NAME_SPA	AS nameSpa 
+		FROM T_CODE 
+		WHERE IS_USE = 'Y'
+		  AND MAJOR = #{major}
+	</select>
+	
+	
+	<insert id="insertPortfolioVisitHistory" parameterType="map">
+		INSERT INTO T_PORTFOLIO_VISIT_HISTORY   /*	 PortfolioRepository.insertPortfolioVisitHistory   포토폴리오 열람 히스토리 저장  */
+		(					
+			PORTFOLIO_ID,
+			USER_ID,
+			CREATED_DATE		
+		)
+		VALUES
+		(
+			#{portfolioId},	 
+			#{userId},				
+			GETDATE()
+			
+		)
+	</insert>
+	
+	<select id="getConcatWords"  resultType="String">
+		SELECT  /*siteMapper.getConcatWords*/
+		  <!-- STUFF((SELECT CAST(',' AS VARCHAR(MAX)) + message -->
+		  STUFF ((CONCAT(SELECT CAST(',' AS VARCHAR(MAX)), message) ))
+		FROM T_BANNED_WORD
+		WHERE IS_USE = 'Y'
+		FOR XML PATH('')), 1, 1, '') AS concatWords
+	</select>
+
+</mapper>

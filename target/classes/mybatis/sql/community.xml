@@ -1,0 +1,941 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.iscreammedia.clic.front.repository.CommunityRepository">	
+
+	<select id="getFriendListCount" parameterType="map" resultType="Integer">
+		SELECT 				/*	CommunityRepository.getFriendListCount   친구 카운트 조회  */
+			COUNT(*)
+		FROM T_USER A, T_FRIEND B	
+		WHERE A.USER_ID = B.FRIEND_ID		
+		AND B.USER_ID = #{userId}
+		AND B.FRIEND_STATUS_CODE = '1103'
+		<if test="searchValue != null and searchValue != '' ">
+			AND ( 
+				A.NAME LIKE CONCAT('%',#{searchValue},'%') 	
+				OR A.FIRSTNAME LIKE CONCAT('%',#{searchValue},'%') 	 	
+				OR A.EMAIL LIKE CONCAT('%',#{searchValue},'%') 		
+				OR A.JOB_ID  LIKE CONCAT('%',#{searchValue},'%')  
+			)
+		</if>
+	</select>
+	<select id="getFriendList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 				/*	CommunityRepository.getFriendList   친구 조회  */
+			A.USER_ID, 					
+			A.CITY_ID,					
+			A.COUNTRY_CODE, 
+			A.USER_IMAGE_PATH,				
+			A.JOB_ID, 
+			(SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng,
+			(SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa,								
+			A.EMAIL, 					
+			A.PASSWORD, 
+			A.USER_STATUS_CODE, 			
+			A.PASSWORD_IS_EARLY, 		
+			A.USER_TYPE_CODE,			
+			A.NAME, 						
+			A.FIRSTNAME, 				
+			A.YEAR, 						
+			A.MONTH,					 	
+			A.DAY,						
+			A.SEX_CODE, 					
+			A.EDUCATION_CODE,			
+			A.IS_STUDENT, 				
+			A.CAREER_CODE, 				
+			A.TELL, 						
+			A.USER_IMAGE_PATH, 			
+			A.USER_BACKGROUND_IMAGE_PATH,
+			A.LAST_LOGIN_DATE,			
+			convert(varchar, B.CREATED_DATE, 102) 		AS CREATED_DATE,			
+			B.CREATOR,
+			convert(varchar, B.UPDATED_DATE, 102) 		AS UPDATED_DATE,			
+			B.UPDATER,			
+			B.FRIEND_ID,			
+			B.FRIEND_STATUS_CODE			
+		FROM T_USER A, T_FRIEND B	
+		WHERE A.USER_ID = B.FRIEND_ID		
+		AND B.USER_ID = #{userId}
+		AND B.FRIEND_STATUS_CODE = '1103'
+		<if test="searchValue != null and searchValue != '' ">
+			AND ( 
+				A.NAME LIKE CONCAT('%',#{searchValue},'%') 	
+				OR A.FIRSTNAME LIKE CONCAT('%',#{searchValue},'%') 	 		
+				OR A.EMAIL LIKE CONCAT('%',#{searchValue},'%') 		
+				OR A.JOB_ID  LIKE CONCAT('%',#{searchValue},'%')  
+			)
+		</if>			
+		ORDER BY A.NAME DESC		
+		OFFSET  #{startIndex} ROWS
+		FETCH NEXT #{rows}	 ROWS ONLY
+	</select>
+	
+	
+	<select id="getFriendSendListCount" parameterType="map" resultType="Integer">
+		SELECT 				/*	CommunityRepository.getFriendSendListCount   요청 보낸 친구 카운트 조회  */
+			COUNT(*)
+		FROM T_USER A, T_FRIEND B	
+		WHERE A.USER_ID = B.FRIEND_ID		
+		AND B.USER_ID = #{userId}
+		AND B.FRIEND_STATUS_CODE = '1101'
+		<if test="searchValue != null and searchValue != '' ">
+			AND ( 
+				A.NAME LIKE CONCAT('%',#{searchValue},'%') 		
+				OR A.FIRSTNAME LIKE CONCAT('%',#{searchValue},'%') 	 	
+				OR A.EMAIL LIKE CONCAT('%',#{searchValue},'%') 		
+				OR A.JOB_ID  LIKE CONCAT('%',#{searchValue},'%')  
+			)
+		</if>
+	</select>
+	<select id="getFriendSendList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 				/*	CommunityRepository.getFriendSendList   요청 보낸 친구 조회  */
+			A.USER_ID, 					
+			A.CITY_ID,					
+			A.COUNTRY_CODE, 
+			A.USER_IMAGE_PATH,						
+			A.JOB_ID, 
+			(SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng,
+			(SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa,								
+			A.EMAIL, 					
+			A.PASSWORD, 
+			A.USER_STATUS_CODE, 			
+			A.PASSWORD_IS_EARLY, 		
+			A.USER_TYPE_CODE,			
+			A.NAME, 						
+			A.FIRSTNAME, 				
+			A.YEAR, 						
+			A.MONTH,					 	
+			A.DAY,						
+			A.SEX_CODE, 					
+			A.EDUCATION_CODE,			
+			A.IS_STUDENT, 				
+			A.CAREER_CODE, 				
+			A.TELL, 						
+			A.USER_IMAGE_PATH, 			
+			A.USER_BACKGROUND_IMAGE_PATH,
+			A.LAST_LOGIN_DATE, 	
+			convert(varchar, B.CREATED_DATE, 102) 		AS CREATED_DATE,				
+			B.CREATOR, 
+			convert(varchar, B.UPDATED_DATE, 102) 		AS UPDATED_DATE,					
+			B.UPDATER,			
+			B.FRIEND_ID,			
+			B.FRIEND_STATUS_CODE			
+		FROM T_USER A, T_FRIEND B	
+		WHERE A.USER_ID = B.FRIEND_ID		
+		AND B.USER_ID = #{userId}
+		AND B.FRIEND_STATUS_CODE = '1101'
+		<if test="searchValue != null and searchValue != '' ">
+			AND ( 
+				A.NAME LIKE CONCAT('%',#{searchValue},'%')
+				OR A.FIRSTNAME LIKE CONCAT('%',#{searchValue},'%') 	 	 		
+				OR A.EMAIL LIKE CONCAT('%',#{searchValue},'%') 		
+				OR A.JOB_ID  LIKE CONCAT('%',#{searchValue},'%')  
+			)
+		</if>	
+		ORDER BY B.CREATED_DATE	DESC	
+		OFFSET  #{startIndex} ROWS
+		FETCH NEXT #{rows}	 ROWS ONLY
+	</select>
+	
+	
+	<select id="getFriendReceptionListCount" parameterType="map" resultType="Integer">
+		SELECT 				/*	CommunityRepository.getFriendReceptionListCount   받은 친구 요청 카운트 조회  */
+			COUNT(*)
+		FROM T_USER A, T_FRIEND B	
+		WHERE A.USER_ID = B.USER_ID		
+		AND B.FRIEND_ID = #{userId}
+		AND B.FRIEND_STATUS_CODE = '1101'
+		<if test="searchValue != null and searchValue != '' ">
+			AND ( 
+				A.NAME LIKE CONCAT('%',#{searchValue},'%')
+				OR A.FIRSTNAME LIKE CONCAT('%',#{searchValue},'%') 	 	 		
+				OR A.EMAIL LIKE CONCAT('%',#{searchValue},'%') 		
+				OR A.JOB_ID  LIKE CONCAT('%',#{searchValue},'%')  
+			)
+		</if>
+	</select>
+	<select id="getFriendReceptionList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 				/*	CommunityRepository.getFriendReceptionList   받은 친구 요청 조회  */
+			A.USER_ID, 					
+			A.CITY_ID,					
+			A.COUNTRY_CODE, 
+			A.USER_IMAGE_PATH,					
+			A.JOB_ID, 
+			(SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng,
+			(SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa,								
+			A.EMAIL, 					
+			A.PASSWORD, 
+			A.USER_STATUS_CODE, 			
+			A.PASSWORD_IS_EARLY, 		
+			A.USER_TYPE_CODE,			
+			A.NAME, 						
+			A.FIRSTNAME, 				
+			A.YEAR, 						
+			A.MONTH,					 	
+			A.DAY,						
+			A.SEX_CODE, 					
+			A.EDUCATION_CODE,			
+			A.IS_STUDENT, 				
+			A.CAREER_CODE, 				
+			A.TELL, 						
+			A.USER_IMAGE_PATH, 			
+			A.USER_BACKGROUND_IMAGE_PATH,
+			A.LAST_LOGIN_DATE, 
+			convert(varchar, B.CREATED_DATE, 102) 		AS CREATED_DATE,	
+			B.CREATOR, 			
+			convert(varchar, dbo.dReturnDates(B.UPDATED_DATE, #{local}), 102)         AS UPDATED_DATE   , 				
+			B.UPDATER,			
+			B.FRIEND_ID,			
+			B.FRIEND_STATUS_CODE			
+		FROM T_USER A, T_FRIEND B	
+		WHERE A.USER_ID = B.USER_ID		
+		AND B.FRIEND_ID = #{userId}
+		AND B.FRIEND_STATUS_CODE = '1101'
+		<if test="searchValue != null and searchValue != '' ">
+			AND ( 
+				A.NAME LIKE CONCAT('%',#{searchValue},'%') 	
+				OR A.FIRSTNAME LIKE CONCAT('%',#{searchValue},'%') 	 		
+				OR A.EMAIL LIKE CONCAT('%',#{searchValue},'%') 		
+				OR A.JOB_ID  LIKE CONCAT('%',#{searchValue},'%')  
+			)
+		</if>		
+		
+		ORDER BY B.CREATED_DATE	DESC	
+		OFFSET  #{startIndex} ROWS
+		FETCH NEXT #{rows}	 ROWS ONLY
+	</select>
+	
+	<select id="getRecommendFriendCount" parameterType="map" resultType="Integer">
+		SELECT		/* CommunityRepository.getRecommendFriendCount 추천친구 카운트 조회 */
+			 COUNT(U.USER_ID)			
+		FROM
+			T_USER U
+		
+		 JOIN
+			T_JOB_TABLE J
+				ON J.JOB_ID = U.JOB_ID
+		<if test="skillCode != null and skillCode != '' ">		
+		LEFT JOIN
+			T_HAVE_SKILL B
+				ON  U.USER_ID = B.USER_ID 
+				AND  B.SKILL_CODE IN (
+					<foreach collection="skillCode" item="value" separator=",">
+						#{value}
+					</foreach>
+				)
+				AND B.SKILL_PROGRESS_LEVEL_CODE = '1205' 	
+		</if>		
+		LEFT JOIN(
+			SELECT 
+				USER_ID,
+				ISNULL(FRIEND_STATUS_CODE, '0000') AS friendStatusCode01
+			FROM
+			T_FRIEND 				
+				WHERE FRIEND_ID = #{userId}	
+			) F	
+			ON F.USER_ID = U.USER_ID
+		LEFT JOIN(
+			SELECT 
+				FRIEND_ID,
+				ISNULL(FRIEND_STATUS_CODE, '0000') AS friendStatusCode02
+			FROM
+			T_FRIEND 				
+			
+				WHERE user_id = #{userId}
+			) FS	
+				ON FS.FRIEND_ID = U.USER_ID		
+		WHERE
+			U.USER_ID != #{userId}
+			AND U.COUNTRY_CODE = #{countryCode}
+			<!-- AND U.JOB_ID = #{jobId} -->
+			AND friendStatusCode01 is NULL
+			AND friendStatusCode02 is NULL
+			AND U.USER_TYPE_CODE != '0102'
+	</select>
+	
+	<select id="getRecommendFriendList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT		/* CommunityRepository.getRecommendFriendList 추천친구 조회 */
+			 U.USER_ID,
+			 U.CITY_ID, 
+			 U.COUNTRY_CODE,
+			 U.JOB_ID, 
+			 U.EMAIL, 
+			 U.PASSWORD, 
+			 friendStatusCode01,
+			 friendStatusCode02,
+			 J.JOB_NAME_ENG AS jobNameEng, 
+			 J.JOB_NAME_SPA AS jobNameSpa,
+			 U.USER_STATUS_CODE, 
+			 U.PASSWORD_IS_EARLY,
+			 U.USER_TYPE_CODE, 
+			 U.NAME, 
+			 U.FIRSTNAME, 
+			 U.YEAR, 
+			 U.MONTH, 
+			 U.DAY, 
+			 U.SEX_CODE, 
+			 U.EDUCATION_CODE, 
+			 U.IS_STUDENT, 
+			 U.CAREER_CODE, 
+			 U.TELL, 
+			 U.USER_IMAGE_PATH, 
+			 U.USER_BACKGROUND_IMAGE_PATH, 
+			 U.LAST_LOGIN_DATE		
+		FROM
+			T_USER U
+		
+		 JOIN
+			T_JOB_TABLE J
+				ON J.JOB_ID = U.JOB_ID
+		<if test="skillCode != null and skillCode != '' ">		
+		LEFT JOIN
+			T_HAVE_SKILL B
+				ON  U.USER_ID = B.USER_ID 
+				AND  B.SKILL_CODE IN (
+					<foreach collection="skillCode" item="value" separator=",">
+						#{value}
+					</foreach>
+				)
+				AND B.SKILL_PROGRESS_LEVEL_CODE = '1205' 	
+		</if>		
+		LEFT JOIN(
+			SELECT 
+				USER_ID,
+				ISNULL(FRIEND_STATUS_CODE, '0000') AS friendStatusCode01
+			FROM
+			T_FRIEND 				
+				WHERE FRIEND_ID = #{userId}	
+			) F	
+			ON F.USER_ID = U.USER_ID
+		LEFT JOIN(
+			SELECT 
+				FRIEND_ID,
+				ISNULL(FRIEND_STATUS_CODE, '0000') AS friendStatusCode02
+			FROM
+			T_FRIEND 				
+			
+				WHERE user_id = #{userId}
+			) FS	
+				ON FS.FRIEND_ID = U.USER_ID	
+		WHERE
+			U.USER_ID != #{userId}
+			AND U.COUNTRY_CODE = #{countryCode}
+			<!-- AND U.JOB_ID = #{jobId} -->
+			AND friendStatusCode01 is NULL	
+			AND friendStatusCode02 is NULL
+			AND U.USER_TYPE_CODE != '0102'
+		ORDER BY  NEWID()
+		OFFSET  #{startIndex} ROWS
+		FETCH NEXT #{rows}	 ROWS ONLY	
+	</select>
+
+	<select id="getRecommendFriendCount111" parameterType="map" resultType="Integer">
+		SELECT 	/* CommunityRepository.getRecommendFriendCount 추천친구 카운트 조회 */ 
+			COUNT(U.USER_ID)	 
+		
+		FROM
+		(
+		SELECT 
+		A.USER_ID,
+		 A.CITY_ID, 
+		 A.COUNTRY_CODE,
+		 A.JOB_ID, A.EMAIL, A.PASSWORD, 
+		 ISNULL((SELECT FRIEND_STATUS_CODE FROM T_FRIEND C WHERE A.USER_ID = C.FRIEND_ID AND C.USER_ID = #{userId}), '0000' ) AS friendStatusCode,
+		 (SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng, 
+		 (SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa, 
+		 A.USER_STATUS_CODE, A.PASSWORD_IS_EARLY, A.USER_TYPE_CODE, A.NAME, 
+		 A.FIRSTNAME, A.YEAR, A.MONTH, A.DAY, A.SEX_CODE, A.EDUCATION_CODE, 
+		 A.IS_STUDENT, A.CAREER_CODE, A.TELL, A.USER_IMAGE_PATH, A.USER_BACKGROUND_IMAGE_PATH, 
+		 A.LAST_LOGIN_DATE
+		 FROM T_USER A
+		 WHERE  A.COUNTRY_CODE = #{countryCode}
+		AND A.USER_ID != #{userId}
+		 UNION 
+			  SELECT
+			A.USER_ID,
+			 A.CITY_ID, 
+			 A.COUNTRY_CODE,
+			 A.JOB_ID, A.EMAIL, A.PASSWORD, 
+			 ISNULL((SELECT FRIEND_STATUS_CODE FROM T_FRIEND C WHERE A.USER_ID = C.FRIEND_ID AND C.USER_ID = #{userId}), '0000' ) AS friendStatusCode,
+			 (SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng, 
+			 (SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa, 
+			 A.USER_STATUS_CODE, A.PASSWORD_IS_EARLY, A.USER_TYPE_CODE, A.NAME, 
+			 A.FIRSTNAME, A.YEAR, A.MONTH, A.DAY, A.SEX_CODE, A.EDUCATION_CODE, 
+			 A.IS_STUDENT, A.CAREER_CODE, A.TELL, A.USER_IMAGE_PATH, A.USER_BACKGROUND_IMAGE_PATH, 
+			 A.LAST_LOGIN_DATE
+			 FROM T_USER A
+			 WHERE  A.JOB_ID = #{jobId}
+			AND A.USER_ID != #{userId}
+			<if test="skillCode != null and skillCode != '' ">
+			UNION 
+			
+				SELECT 
+				A.USER_ID,
+				 A.CITY_ID, 
+				 A.COUNTRY_CODE,
+				 A.JOB_ID, A.EMAIL, A.PASSWORD, 
+				 ISNULL((SELECT FRIEND_STATUS_CODE FROM T_FRIEND C WHERE A.USER_ID = C.FRIEND_ID AND C.USER_ID = #{userId}), '0000' ) AS friendStatusCode,
+				 (SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng, 
+				 (SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa, 
+				 A.USER_STATUS_CODE, A.PASSWORD_IS_EARLY, A.USER_TYPE_CODE, A.NAME, 
+				 A.FIRSTNAME, A.YEAR, A.MONTH, A.DAY, A.SEX_CODE, A.EDUCATION_CODE, 
+				 A.IS_STUDENT, A.CAREER_CODE, A.TELL, A.USER_IMAGE_PATH, A.USER_BACKGROUND_IMAGE_PATH, 
+				 A.LAST_LOGIN_DATE
+				 FROM T_USER A, T_HAVE_SKILL B 
+				 WHERE A.USER_ID = B.USER_ID 
+					AND B.SKILL_CODE IN (
+					<foreach collection="skillCode" item="value" separator=",">
+						#{value}
+					</foreach>
+					)
+					AND B.SKILL_PROGRESS_LEVEL_CODE = '1205' 
+				 AND A.USER_ID != #{userId}
+			</if>	 
+			 
+			) U 
+			, T_FRIEND F
+					WHERE  U.USER_ID = F.FRIEND_ID
+					AND F.FRIEND_STATUS_CODE = '1101'
+					AND U.friendStatusCode NOT IN ('1101', '1102', '1103', '1104')
+	</select>
+	
+	<select id="getRecommendFriendList111" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 	/* CommunityRepository.getRecommendFriendList 추천친구 조회 */ 
+		 U.USER_ID,
+		 U.CITY_ID, 
+		 U.COUNTRY_CODE,
+		 U.JOB_ID, 
+		 U.EMAIL, 
+		 U.PASSWORD, 
+		 U.friendStatusCode,
+		 U.jobNameEng, 
+		 U.jobNameSpa, 
+		 U.USER_STATUS_CODE, 
+		 U.PASSWORD_IS_EARLY,
+		 U.USER_TYPE_CODE, 
+		 U.NAME, 
+		 U.FIRSTNAME, 
+		 U.YEAR, 
+		 U.MONTH, 
+		 U.DAY, 
+		 U.SEX_CODE, 
+		 U.EDUCATION_CODE, 
+		 U.IS_STUDENT, 
+		 U.CAREER_CODE, 
+		 U.TELL, 
+		 U.USER_IMAGE_PATH, 
+		 U.USER_BACKGROUND_IMAGE_PATH, 
+		 U.LAST_LOGIN_DATE
+		
+		FROM
+		(
+		SELECT /* CommunityRepository.getRecommendFriendList 추천친구 조회 */ 
+		A.USER_ID,
+		 A.CITY_ID, 
+		 A.COUNTRY_CODE,
+		 A.JOB_ID, A.EMAIL, A.PASSWORD, 
+		 ISNULL((SELECT FRIEND_STATUS_CODE FROM T_FRIEND C WHERE A.USER_ID = C.FRIEND_ID AND C.USER_ID = #{userId}), '0000' ) AS friendStatusCode,
+		 (SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng, 
+		 (SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa, 
+		 A.USER_STATUS_CODE, A.PASSWORD_IS_EARLY, A.USER_TYPE_CODE, A.NAME, 
+		 A.FIRSTNAME, A.YEAR, A.MONTH, A.DAY, A.SEX_CODE, A.EDUCATION_CODE, 
+		 A.IS_STUDENT, A.CAREER_CODE, A.TELL, A.USER_IMAGE_PATH, A.USER_BACKGROUND_IMAGE_PATH, 
+		 A.LAST_LOGIN_DATE
+		 FROM T_USER A
+		 WHERE  A.COUNTRY_CODE = #{countryCode}
+		AND A.USER_ID != #{userId}
+		 UNION 
+			  SELECT /* CommunityRepository.getRecommendFriendList 추천친구 조회 */ 
+			A.USER_ID,
+			 A.CITY_ID, 
+			 A.COUNTRY_CODE,
+			 A.JOB_ID, A.EMAIL, A.PASSWORD, 
+			ISNULL((SELECT FRIEND_STATUS_CODE FROM T_FRIEND C WHERE A.USER_ID = C.FRIEND_ID AND C.USER_ID = #{userId}), '0000' ) AS friendStatusCode,
+			 (SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng, 
+			 (SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa, 
+			 A.USER_STATUS_CODE, A.PASSWORD_IS_EARLY, A.USER_TYPE_CODE, A.NAME, 
+			 A.FIRSTNAME, A.YEAR, A.MONTH, A.DAY, A.SEX_CODE, A.EDUCATION_CODE, 
+			 A.IS_STUDENT, A.CAREER_CODE, A.TELL, A.USER_IMAGE_PATH, A.USER_BACKGROUND_IMAGE_PATH, 
+			 A.LAST_LOGIN_DATE
+			 FROM T_USER A
+			 WHERE  A.JOB_ID = #{jobId}
+			AND A.USER_ID != #{userId}
+		
+		<if test="skillCode != null and skillCode != '' ">	
+		UNION 
+		
+			SELECT /* CommunityRepository.getRecommendFriendList 추천친구 조회 */ 
+			A.USER_ID,
+			 A.CITY_ID, 
+			 A.COUNTRY_CODE,
+			 A.JOB_ID, A.EMAIL, A.PASSWORD, 
+			 ISNULL((SELECT FRIEND_STATUS_CODE FROM T_FRIEND C WHERE A.USER_ID = C.FRIEND_ID AND C.USER_ID = #{userId}), '0000' ) AS friendStatusCode,
+			 (SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng, 
+			 (SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa, 
+			 A.USER_STATUS_CODE, A.PASSWORD_IS_EARLY, A.USER_TYPE_CODE, A.NAME, 
+			 A.FIRSTNAME, A.YEAR, A.MONTH, A.DAY, A.SEX_CODE, A.EDUCATION_CODE, 
+			 A.IS_STUDENT, A.CAREER_CODE, A.TELL, A.USER_IMAGE_PATH, A.USER_BACKGROUND_IMAGE_PATH, 
+			 A.LAST_LOGIN_DATE
+			 FROM T_USER A, T_HAVE_SKILL B 
+			 WHERE A.USER_ID = B.USER_ID 
+				AND B.SKILL_CODE IN (
+					<foreach collection="skillCode" item="value" separator=",">
+						#{value}
+					</foreach>
+					)
+					AND B.SKILL_PROGRESS_LEVEL_CODE = '1205' 
+			 AND A.USER_ID != #{userId}
+		</if>
+			) U		 , T_FRIEND F
+					WHERE  U.USER_ID = F.FRIEND_ID
+					AND F.FRIEND_STATUS_CODE = '1101' 
+					AND U.friendStatusCode NOT IN ('1101', '1102', '1103', '1104')
+				
+		ORDER BY  U.LAST_LOGIN_DATE
+		OFFSET  #{startIndex} ROWS
+		FETCH NEXT #{rows}	 ROWS ONLY
+	</select>
+	
+	
+	
+	
+	<select id="getRecommendFriendCount111111111" parameterType="map" resultType="Integer">
+		SELECT 				/*	CommunityRepository.getRecommendFriendCount   추천친구 카운트 조회  */
+			TOP 100
+			COUNT(*)
+		FROM T_USER A, T_HAVE_SKILL B
+		WHERE A.USER_ID = B.USER_ID
+		AND A.COUNTRY_CODE = #{countryCode}
+		<!-- AND A.CITY_ID = '' -->
+		AND A.JOB_ID = #{jobId}
+		<if test="skillCode != null and skillCode != '' ">
+			AND B.SKILL_CODE IN ( 
+			<foreach collection="skillCode" item="value" separator=",">
+				#{value}
+			</foreach>
+			)
+			AND A.USER_ID != #{userId}
+		</if>
+		
+		AND B.SKILL_PROGRESS_LEVEL_CODE = '1205'
+		
+		
+	</select>
+	
+	<select id="getRecommendFriendList111111" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 				/*	CommunityRepository.getRecommendFriendList   추천친구 조회  */
+			A.USER_ID, 					
+			A.CITY_ID,					
+			A.COUNTRY_CODE, 				
+			A.JOB_ID, 							
+			A.EMAIL, 					
+			A.PASSWORD, 
+			<!-- F.FRIEND_STATUS_CODE AS friendStatusCode, -->
+			(SELECT FRIEND_STATUS_CODE FROM T_FRIEND C WHERE A.USER_ID = C.FRIEND_ID AND  C.USER_ID = #{userId})AS friendStatusCode,	
+			(SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng,
+			(SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa,						
+			A.USER_STATUS_CODE, 			
+			A.PASSWORD_IS_EARLY, 		
+			A.USER_TYPE_CODE,			
+			A.NAME, 						
+			A.FIRSTNAME, 				
+			A.YEAR, 						
+			A.MONTH,					 	
+			A.DAY,						
+			A.SEX_CODE, 					
+			A.EDUCATION_CODE,			
+			A.IS_STUDENT, 				
+			A.CAREER_CODE, 				
+			A.TELL, 						
+			A.USER_IMAGE_PATH, 			
+			A.USER_BACKGROUND_IMAGE_PATH,
+			A.LAST_LOGIN_DATE, 			
+			B.CREATED_DATE,
+			B.UPDATED_DATE,	
+			B.SKILL_CODE,
+			B.EXAM_CLASS_CODE
+		FROM T_USER A, T_HAVE_SKILL B
+		WHERE A.USER_ID = B.USER_ID
+		<!-- AND A.USER_ID = F.FRIEND_ID -->
+		AND A.COUNTRY_CODE = #{countryCode}
+		<!-- AND A.CITY_ID = '' -->
+		AND A.JOB_ID = #{jobId}
+		<if test="skillCode != null and skillCode != '' ">
+			AND B.SKILL_CODE IN ( 
+			<foreach collection="skillCode" item="value" separator=",">
+				#{value}
+			</foreach>
+			)
+			AND B.SKILL_PROGRESS_LEVEL_CODE = '1205'
+		</if>
+		<!-- <if test="skillCode == null">
+			AND B.SKILL_CODE IN ( '' )
+		</if> -->
+		<!-- AND F.FRIEND_STATUS_CODE NOT IN ('1104','1103') -->
+		AND A.USER_ID != #{userId}
+		
+		ORDER BY B.CREATED_DATE		
+		OFFSET  #{startIndex} ROWS
+		FETCH NEXT #{rows}	 ROWS ONLY
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	<select id="getFriendCount" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">			
+		SELECT 		/*	 CommunityRepository.getFriendCount   친구 정보 카운트 조회    */		
+			COUNT(CASE WHEN A.FRIEND_STATUS_CODE = '1103' AND A.USER_ID = #{userId} THEN A.FRIEND_STATUS_CODE  END ) AS friendAll, 
+			<!-- COUNT(CASE WHEN FRIEND_STATUS_CODE = '1103' AND FRIEND_ID = #{userId} THEN FRIEND_STATUS_CODE  END ) AS friendAll,	 -->			
+			COUNT(CASE WHEN A.FRIEND_STATUS_CODE = '1101' AND A.FRIEND_ID = #{userId}  THEN A.FRIEND_STATUS_CODE   END) AS friendReception,
+			COUNT(CASE WHEN A.FRIEND_STATUS_CODE = '1101' AND A.USER_ID = #{userId}  THEN A.FRIEND_STATUS_CODE   END) AS friendSend
+		FROM T_FRIEND A , T_USER B WHERE A.FRIEND_ID = B.USER_ID
+	</select>
+	 
+	 
+	<select id="getSkillAuthCount" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+	 	 SELECT 		/*	 CommunityRepository.insertFriend   스킬인증 카운트 조회    */
+			COUNT(CASE WHEN A.IS_AUTH = 'Y' AND A.USER_ID = #{userId} THEN IS_AUTH  END ) AS authComplete,			
+			<!-- COUNT(CASE WHEN FRIEND_ID = #{userId} AND (IS_AUTH = 'R' OR IS_AUTH IS NULL) THEN IS_AUTH   END) AS authReception, --> 
+			<!-- COUNT(CASE WHEN FRIEND_ID = #{userId} THEN IS_AUTH   END) AS authReception, -->
+			COUNT(CASE WHEN A.FRIEND_ID = #{userId}  AND A.IS_AUTH != 'N' THEN IS_AUTH   END) AS authReception,
+			COUNT(CASE WHEN A.USER_ID = #{userId} AND (A.IS_AUTH = 'R' OR A.IS_AUTH IS NULL)  THEN IS_AUTH   END) AS authSend
+		FROM T_SKILL_FRIEND_AUTH A , T_USER B , T_SKILL D WHERE A.USER_ID = B.USER_ID AND A.SKILL_CODE = D.SKILL_CODE
+	</select>
+	 
+	 
+	<select id="getSkillCodeList" parameterType="map" resultType="String">
+	 	SELECT			/*	 CommunityRepository.getSkillCodeCount   스킬코드 조회    */
+	 		SKILL_CODE AS skillCode
+	 	FROM T_HAVE_SKILL 
+	 	WHERE USER_ID = #{userId}
+	 	AND SKILL_PROGRESS_LEVEL_CODE = '1205'
+	</select>
+		
+	
+	<insert id="insertFriend" parameterType="map">
+		INSERT INTO T_FRIEND   /*	 CommunityRepository.insertFriend   친구 추가    */
+		(			
+			FRIEND_ID,
+			USER_ID,
+			FRIEND_STATUS_CODE,
+			CREATED_DATE,
+			UPDATED_DATE
+		)
+		VALUES
+		(
+			#{friendId},
+			#{userId},
+			#{friendStatusCode},
+			GETDATE(),		
+			GETDATE()			
+		)
+	</insert>
+	
+	<update id="approvalFriend" parameterType="map" >
+		UPDATE T_FRIEND	/*	CommunityRepository.approvalFriend   친구요청 승인  */
+		SET
+			FRIEND_STATUS_CODE = '1103'
+		WHERE USER_ID = #{userId}
+		AND FRIEND_ID = #{friendId}
+	</update>
+	
+	<update id="rejectFriend" parameterType="map" >
+		UPDATE T_FRIEND	/*	CommunityRepository.rejectFriend   친구요청 거절  */
+		SET
+			FRIEND_STATUS_CODE = '1104'
+		WHERE USER_ID = #{userId}
+		AND FRIEND_ID = #{friendId}
+	</update>
+	
+	<delete id="deleteFriend" parameterType="map">		
+		DELETE		/* CommunityRepository.deleteFriend 친구 삭제  */
+		FROM
+			T_FRIEND
+		WHERE
+			USER_ID = #{userId}
+		AND FRIEND_ID = #{friendId}		
+	</delete>
+	
+	
+	<select id="getSkillListCount" parameterType="map" resultType="Integer">
+		SELECT 				/*	CommunityRepository.getSkillListCount   스킬 인증 카운트 조회  */
+			COUNT(*)
+		FROM T_USER A, T_SKILL_FRIEND_AUTH B	, T_SKILL D
+		WHERE A.USER_ID = B.FRIEND_ID	
+		AND B.SKILL_CODE = D.SKILL_CODE	
+		<!-- AND A.USER_TYPE_CODE = '2004' -->
+		AND B.USER_ID = #{userId}
+		<!-- AND B.USER_ID = 'TEST' -->
+		AND B.IS_AUTH = 'Y'
+		
+	</select>
+	
+	
+	<select id="getSkillList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 				/*	CommunityRepository.getSkillList   스킬 인증 조회  */
+				A.USER_ID, 					
+				A.CITY_ID,					
+				A.COUNTRY_CODE, 	
+				A.USER_IMAGE_PATH,					
+				A.JOB_ID, 
+				(SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng,
+				(SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa,								
+				A.EMAIL, 					
+				A.PASSWORD, 
+				A.USER_STATUS_CODE, 			
+				A.PASSWORD_IS_EARLY, 		
+				A.USER_TYPE_CODE,			
+				A.NAME, 						
+				A.FIRSTNAME,
+				B.SKILL_CODE,
+				B.EXAM_CLASS_CODE,
+				D.SKILL_NAME_ENG,
+				D.SKILL_NAME_SPA,
+				B.AUTH_CONTENTS,
+				B.IS_AUTH,				
+				convert(varchar, B.AUTH_REQUEST_DATE, 102) 		AS AUTH_REQUEST_DATE,
+				convert(varchar, dbo.dReturnDates(B.UPDATED_DATE, #{local}), 102)         AS UPDATED_DATE  
+			FROM T_USER A, T_SKILL_FRIEND_AUTH B	, T_SKILL D
+			WHERE A.USER_ID = B.FRIEND_ID	
+			AND B.SKILL_CODE = D.SKILL_CODE	
+			<!-- AND A.USER_TYPE_CODE = '2004' -->
+			AND B.USER_ID = #{userId}			
+			AND B.IS_AUTH = 'Y'
+			ORDER BY B.UPDATED_DATE DESC
+			
+			OFFSET  #{startIndex} ROWS
+			FETCH NEXT #{rows}	 ROWS ONLY
+	</select>
+	
+	<select id="getFriendCheckList" parameterType="String" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		<!-- SELECT FRIEND_ID FROM T_FRIEND WHERE user_id = #{userId} AND FRIEND_STATUS_CODE = '1103' -->
+		SELECT FRIEND_ID FROM T_FRIEND WHERE user_id = #{userId} AND FRIEND_STATUS_CODE = '1103'
+	</select>
+	
+	<select id="getFriendCheckList02" parameterType="String" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		<!-- SELECT FRIEND_ID FROM T_FRIEND WHERE user_id = #{userId} AND FRIEND_STATUS_CODE = '1103' -->
+		SELECT USER_ID FROM T_FRIEND WHERE friend_id = #{userId} AND FRIEND_STATUS_CODE = '1101'
+	</select>
+		
+	<select id="getSkillReceptionListCount" parameterType="map" resultType="Integer">
+		SELECT 				/*	CommunityRepository.getFriendListCount   스킬 받은 인증 카운트 조회  */
+			COUNT(*)		
+		FROM T_USER A, T_SKILL_FRIEND_AUTH B	, T_SKILL D
+		WHERE A.USER_ID = B.USER_ID	
+		AND B.SKILL_CODE = D.SKILL_CODE		
+		AND B.FRIEND_ID = #{userId} 
+		AND B.IS_AUTH != 'N' 
+		<!-- AND B.USER_ID = #{userId} 
+		AND B.IS_AUTH = 'Y'  -->
+		
+	</select>
+	
+	<select id="getSkillReceptionList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 				/*	CommunityRepository.getSkillReceptionList   스킬 받은 인증 조회  */
+			A.USER_ID, 					
+			A.CITY_ID,					
+			A.COUNTRY_CODE, 		
+			A.USER_IMAGE_PATH,				
+			A.JOB_ID, 
+			(SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng,
+			(SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa,								
+			A.EMAIL, 					
+			A.PASSWORD, 
+			A.USER_STATUS_CODE, 			
+			A.PASSWORD_IS_EARLY, 		
+			A.USER_TYPE_CODE,			
+			A.NAME, 						
+			A.FIRSTNAME,
+			B.SKILL_CODE,
+			B.EXAM_CLASS_CODE,
+			D.SKILL_NAME_ENG,
+			D.SKILL_NAME_SPA,
+			B.AUTH_CONTENTS,
+			B.IS_AUTH,	
+			convert(varchar, dbo.dReturnDates(B.AUTH_REQUEST_DATE, #{local}), 102)         AS AUTH_REQUEST_DATE   , 			
+			convert(varchar, B.UPDATED_DATE, 102) 		AS UPDATED_DATE	
+		FROM T_USER A, T_SKILL_FRIEND_AUTH B	, T_SKILL D
+		WHERE A.USER_ID = B.USER_ID	
+		AND B.SKILL_CODE = D.SKILL_CODE		
+		AND B.FRIEND_ID = #{userId}
+		AND B.IS_AUTH != 'N' 
+		<!-- AND B.USER_ID = #{userId}
+		AND B.IS_AUTH = 'Y' -->
+		ORDER BY B.AUTH_REQUEST_DATE DESC
+		
+		OFFSET  #{startIndex} ROWS
+			FETCH NEXT #{rows}	 ROWS ONLY
+	</select>
+	
+	<select id="getSkillReceptionList02" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 				/*	CommunityRepository.getSkillReceptionList   스킬 받은 인증 조회  */
+			A.USER_ID, 					
+			A.CITY_ID,					
+			A.COUNTRY_CODE, 		
+			A.USER_IMAGE_PATH,				
+			A.JOB_ID, 
+			(SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng,
+			(SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa,								
+			A.EMAIL, 					
+			A.PASSWORD, 
+			A.USER_STATUS_CODE, 			
+			A.PASSWORD_IS_EARLY, 		
+			A.USER_TYPE_CODE,			
+			A.NAME, 						
+			A.FIRSTNAME,
+			B.SKILL_CODE,
+			B.EXAM_CLASS_CODE,
+			D.SKILL_NAME_ENG,
+			D.SKILL_NAME_SPA,
+			B.AUTH_CONTENTS,
+			B.IS_AUTH,			
+			convert(varchar, B.AUTH_REQUEST_DATE, 102) 		AS AUTH_REQUEST_DATE,	
+			convert(varchar, B.UPDATED_DATE, 102) 		AS UPDATED_DATE	
+		FROM T_USER A, T_SKILL_FRIEND_AUTH B	, T_SKILL D
+		WHERE A.USER_ID = B.USER_ID	
+		AND B.SKILL_CODE = D.SKILL_CODE		
+		AND B.FRIEND_ID = #{userId}
+		AND B.IS_AUTH != 'Y' 
+		<!-- AND B.USER_ID = #{userId}
+		AND B.IS_AUTH = 'Y' -->
+		ORDER BY B.AUTH_REQUEST_DATE
+		
+		OFFSET  #{startIndex} ROWS
+			FETCH NEXT #{rows}	 ROWS ONLY
+	</select>
+	
+	
+	<select id="getSkillSendListCount" parameterType="map" resultType="Integer">
+		SELECT 				/*	CommunityRepository.getFriendListCount   스킬 보낸 인증 카운트 조회  */
+			COUNT(*)		
+		FROM T_USER A, T_SKILL_FRIEND_AUTH B	, T_SKILL D
+		WHERE A.USER_ID = B.FRIEND_ID
+		AND B.SKILL_CODE = D.SKILL_CODE			
+		AND B.USER_ID = #{userId}  
+		AND B.IS_AUTH = 'R'		
+	</select>
+	
+	<select id="getSkillSendList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 				/*	CommunityRepository.getSkillSendList   스킬 보낸 인증 조회  */
+			A.USER_ID, 					
+			A.CITY_ID,					
+			A.COUNTRY_CODE, 
+			A.USER_IMAGE_PATH,						
+			A.JOB_ID, 
+			(SELECT JOB_NAME_ENG FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameEng,
+			(SELECT JOB_NAME_SPA FROM T_JOB_TABLE C WHERE A.JOB_ID = C.JOB_ID) jobNameSpa,								
+			A.EMAIL, 					
+			A.PASSWORD, 
+			A.USER_STATUS_CODE, 			
+			A.PASSWORD_IS_EARLY, 		
+			A.USER_TYPE_CODE,			
+			A.NAME, 						
+			A.FIRSTNAME,
+			B.SKILL_CODE,
+			B.EXAM_CLASS_CODE,
+			D.SKILL_NAME_ENG,
+			D.SKILL_NAME_SPA,
+			B.AUTH_CONTENTS,
+			B.IS_AUTH,
+			<!-- B.AUTH_REQUEST_DATE AS authDateCheck, -->
+			dbo.dReturnDate(B.AUTH_REQUEST_DATE)  AS authDateCheck,
+			convert(varchar, dbo.dReturnDates(B.AUTH_REQUEST_DATE, #{local}), 102)         AS AUTH_REQUEST_DATE   , 		
+			convert(varchar, B.UPDATED_DATE, 102) 		AS UPDATED_DATE	
+		FROM T_USER A, T_SKILL_FRIEND_AUTH B	, T_SKILL D	
+		WHERE A.USER_ID = B.FRIEND_ID	
+		AND B.SKILL_CODE = D.SKILL_CODE		
+		AND B.USER_ID = #{userId}  
+		AND B.IS_AUTH = 'R'
+		ORDER BY B.AUTH_REQUEST_DATE DESC
+		
+		OFFSET  #{startIndex} ROWS
+			FETCH NEXT #{rows}	 ROWS ONLY	
+	</select>
+	
+	<select id="getPortfolioCountList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 		/*	 CommunityRepository.getPortfolioCountList   스킬인증 카운트 조회    */		
+			COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId}
+		AND  CONVERT(varchar(10), CREATED_DATE , 121 ) BETWEEN  CONVERT(varchar(10),DATEADD(DAY, -8, GETDATE()), 121 ) AND  CONVERT(varchar(10),DATEADD(DAY, -7, GETDATE()), 121 ) THEN PORTFOLIO_ID  END ) AS chart1
+		
+			,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId}
+		AND  CONVERT(varchar(10), CREATED_DATE , 121 ) BETWEEN CONVERT(varchar(10),DATEADD(DAY, -7, GETDATE()), 121 ) AND CONVERT(varchar(10),DATEADD(DAY, -6, GETDATE()), 121 ) THEN PORTFOLIO_ID  END ) AS chart2
+		
+			,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId} 
+		AND  CONVERT(varchar(10), CREATED_DATE , 121 ) BETWEEN CONVERT(varchar(10),DATEADD(DAY, -6, GETDATE()), 121 ) AND CONVERT(varchar(10),DATEADD(DAY, -5, GETDATE()), 121 ) THEN PORTFOLIO_ID  END ) AS chart3
+		
+		,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId} 
+		AND  CONVERT(varchar(10), CREATED_DATE , 121 ) BETWEEN CONVERT(varchar(10),DATEADD(DAY, -5, GETDATE()), 121 ) AND CONVERT(varchar(10),DATEADD(DAY, -4, GETDATE()), 121 ) THEN PORTFOLIO_ID  END ) AS chart4
+		
+		,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId}
+		AND  CONVERT(varchar(10), CREATED_DATE , 121 ) BETWEEN CONVERT(varchar(10),DATEADD(DAY, -4, GETDATE()), 121 ) AND CONVERT(varchar(10),DATEADD(DAY, -3, GETDATE()), 121 ) THEN PORTFOLIO_ID  END ) AS chart5
+		
+		,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId}
+		AND  CONVERT(varchar(10), CREATED_DATE , 121 ) BETWEEN CONVERT(varchar(10),DATEADD(DAY, -3, GETDATE()), 121 ) AND CONVERT(varchar(10),DATEADD(DAY, -2, GETDATE()), 121 ) THEN PORTFOLIO_ID  END ) AS chart6
+		
+		,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId}
+		AND  CONVERT(varchar(10), CREATED_DATE , 121 ) BETWEEN CONVERT(varchar(10),DATEADD(DAY, -2, GETDATE()), 121 ) AND CONVERT(varchar(10),DATEADD(DAY, -1, GETDATE()), 121 ) THEN PORTFOLIO_ID  END ) AS chart7	
+				
+			FROM T_PORTFOLIO_VISIT_HISTORY
+	</select>
+	
+	<select id="getPortfolioCountList1111111" parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">
+		SELECT 		/*	 CommunityRepository.getPortfolioCountList   스킬인증 카운트 조회    */		
+			COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId}
+		AND CREATED_DATE BETWEEN DATE_ADD(GETDATE(),INTERVAL -8 DAY ) AND DATE_ADD(GETDATE(),INTERVAL -7 DAY ) THEN PORTFOLIO_ID  END ) AS chart1
+		
+			,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId}
+		AND CREATED_DATE BETWEEN DATE_ADD(GETDATE(),INTERVAL -7 DAY ) AND DATE_ADD(GETDATE(),INTERVAL -6 DAY ) THEN PORTFOLIO_ID  END ) AS chart2
+		
+			,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId} 
+		AND CREATED_DATE BETWEEN DATE_ADD(GETDATE(),INTERVAL -6 DAY ) AND DATE_ADD(GETDATE(),INTERVAL -5 DAY ) THEN PORTFOLIO_ID  END ) AS chart3
+		
+		,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId} 
+		AND CREATED_DATE BETWEEN DATE_ADD(GETDATE(),INTERVAL -5 DAY ) AND DATE_ADD(GETDATE(),INTERVAL -4 DAY ) THEN PORTFOLIO_ID  END ) AS chart4
+		
+		,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId}
+		AND CREATED_DATE BETWEEN DATE_ADD(GETDATE(),INTERVAL -4 DAY ) AND DATE_ADD(GETDATE(),INTERVAL -3 DAY ) THEN PORTFOLIO_ID  END ) AS chart5
+		
+		,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId}
+		AND CREATED_DATE BETWEEN DATE_ADD(GETDATE(),INTERVAL -3 DAY ) AND DATE_ADD(GETDATE(),INTERVAL -2 DAY ) THEN PORTFOLIO_ID  END ) AS chart6
+		
+		,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId}
+		AND CREATED_DATE BETWEEN DATE_ADD(GETDATE(),INTERVAL -2 DAY ) AND DATE_ADD(GETDATE(),INTERVAL -1 DAY ) THEN PORTFOLIO_ID  END ) AS chart7	
+		
+		<!-- ,COUNT(CASE WHEN PORTFOLIO_ID = #{portfolioId} AND USER_ID = #{userId} 
+		AND CREATED_DATE BETWEEN DATE_ADD(NOW(),INTERVAL -1 DAY ) AND NOW() THEN PORTFOLIO_ID  END ) AS '06.11'		 -->
+			FROM T_PORTFOLIO_VISIT_HISTORY
+	</select>
+	
+	
+	<select id="getChartDateList" resultType="com.iscreammedia.clic.front.domain.CommunityDomain">		
+		 SELECT 
+			CONVERT(varchar(10), DATEADD(DAY, -7, GETDATE()), 121) AS chartDate1,
+			CONVERT(varchar(10), DATEADD(DAY, -6, GETDATE()), 121) AS chartDate2,
+			CONVERT(varchar(10), DATEADD(DAY, -5, GETDATE()), 121) AS chartDate3,
+			CONVERT(varchar(10), DATEADD(DAY, -4, GETDATE()), 121) AS chartDate4,
+			CONVERT(varchar(10), DATEADD(DAY, -3, GETDATE()), 121) AS chartDate5,
+			CONVERT(varchar(10), DATEADD(DAY, -2, GETDATE()), 121) AS chartDate6,
+			CONVERT(varchar(10), DATEADD(DAY, -1, GETDATE()), 121) AS chartDate7; 
+	</select>
+	
+	
+	<update id="rejectSkillFriendAuth" parameterType="map">
+		/* CommunityRepository.rejectSkillFriendAuth : 스킬 인증 거절 */
+		UPDATE
+			T_SKILL_FRIEND_AUTH
+		SET
+			IS_AUTH = 'N'
+			,UPDATED_DATE = GETDATE()
+		WHERE
+			SKILL_CODE = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+		AND USER_ID = #{userId}
+		AND FRIEND_ID = #{friendId}
+	</update>
+	
+	
+	
+	
+</mapper>

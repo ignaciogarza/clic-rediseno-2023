@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iscreammedia.clic.front.repository.ProgramingRepository">	
+	
+	<select id="selectProgramingList" resultType="com.iscreammedia.clic.front.domain.ProgramingDomain">
+		SELECT		/*	ProgramingRepository.selectProgramingList   프로그래밍 조회  */
+			PROGRAMING_ID
+			, PROGRAMING_NAME_${language.code} AS PROGRAMING_NAME
+		FROM T_PROGRAMING_TABLE
+		ORDER BY PROGRAMING_ID ASC
+	</select>
+	
+</mapper>

@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.iscreammedia.clic.front.repository.ProjectRepository">	
+	
+	<select id="getProjectIdList" parameterType="String" resultType="com.iscreammedia.clic.front.domain.ProjectDomain">
+		SELECT 	/*	projectRepository.getProjectIdList  프로젝트 아이디 조회  */			
+			PROJECT_ID			AS projectId		
+		FROM T_PROJECT		
+		WHERE PORTFOLIO_ID = #{portfolioId}
+		AND IS_DELETE = 'N'
+		
+	</select>
+	
+	<select id="getProjectList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ProjectDomain">
+		SELECT 	/*	projectRepository.getProjectList  프로젝트 조회  */
+			PROJECT_ID 			AS projectId, 
+			SEQUENCE			AS sequence,
+			NAME				AS name,
+			IS_DELETE			AS isDelete,
+			INTRODUCTION		AS introduction,
+			IMAGE_PATH			AS imagPath,
+			PORTFOLIO_ID    	AS portfolioId,
+			LIKE_COUNT			AS likeCount,
+			CREATED_DATE		AS createdDate,
+			convert(varchar, dbo.dReturnDates(UPDATED_DATE, #{local}), 102) 		AS updatedDate	
+		FROM T_PROJECT		
+		WHERE PORTFOLIO_ID = #{portfolioId}
+		AND IS_DELETE = 'N'
+		ORDER BY UPDATED_DATE DESC
+	</select>
+	
+	<select id="getProjectDetailInfo" parameterType="String" resultType="com.iscreammedia.clic.front.domain.ProjectDomain">
+		SELECT 	/*	projectRepository.getProjectDetailInfo  프로젝트 상세 조회  */
+			PROJECT_ID 			AS projectId, 
+			SEQUENCE			AS sequence,
+			NAME				AS name,
+			IS_DELETE			AS isDelete,
+			INTRODUCTION		AS introduction,
+			IMAGE_PATH			AS imagPath,
+			PORTFOLIO_ID    	AS portfolioId,
+			LIKE_COUNT			AS likeCount,
+			CREATED_DATE		AS createdDate,
+			UPDATED_DATE		AS updatedDate	
+		FROM T_PROJECT		
+		WHERE PROJECT_ID = #{projectId}
+		AND IS_DELETE = 'N'
+		ORDER BY UPDATED_DATE DESC
+	</select>
+	
+	
+	<insert id="insertProject" parameterType="map">
+		INSERT INTO T_PROJECT   /*	 projectRepository.insertProject   프로젝트 등록    */
+		(	
+			<!-- SEQUENCE, -->
+			NAME,
+			IS_DELETE,
+			INTRODUCTION,
+			IMAGE_PATH,
+			PORTFOLIO_ID,
+			LIKE_COUNT,
+			CREATED_DATE,
+			UPDATED_DATE		
+		)
+		VALUES
+		(
+			<!-- (SEQUENCE +1) ,	 -->
+			#{name},
+			'N',
+			#{introduction},
+			#{imagPath},
+			#{portfolioId},
+			0,
+			GETDATE(),
+			GETDATE()
+		)
+	</insert>
+	
+	<update id="updateProject" parameterType="map"  >
+		UPDATE T_PROJECT	/*	projectRepository.updateProject  프로젝트 수정   */
+			SET					
+				NAME = #{name},
+				INTRODUCTION = #{introduction},
+				IMAGE_PATH = #{imagPath}
+		WHERE PROJECT_ID = #{projectId}
+	</update>
+	
+	
+	<insert id="insertProjectContents" parameterType="map">
+		INSERT INTO T_PROJECT_CONTENTS   /*	 projectRepository.insertProjectContents   프로젝트 컨텐츠 등록    */
+		(	
+			USER_ID,
+			SKILL_CODE, 
+			CONTENTS_TYPE_CODE,
+			CONTENTS_NAME,
+			CONTENTS_URL,
+			CONTENTS_PATH,
+			CONTENTS,
+			IS_DELETE,
+			PROJECT_ID,
+			CREATED_DATE,
+			UPDATED_DATE		
+		)
+		VALUES
+		(
+			#{userId},
+			#{skillCode},
+			#{contentsTypeCode},
+			#{contentsName},
+			#{contentsUrl},
+			#{contentsPath},
+			#{contents},
+			'N',
+			#{projectId},
+			GETDATE(),
+			GETDATE()		
+		)
+	</insert>
+	
+	
+	<update id="updateProjectContents" parameterType="map"  >
+		UPDATE T_PROJECT_CONTENTS	/*	projectRepository.updateProjectContents  프로젝트 수정   */
+			SET					
+				CONTENTS_NAME	= #{contentsName},
+				<if test="contentsUrl != null">
+					CONTENTS_URL	= #{contentsUrl},
+				</if>
+				<if test="contentsPath != null">
+					CONTENTS_PATH	= #{contentsPath},
+				</if>
+				UPDATED_DATE	= GETDATE()	
+			WHERE  PROJECT_CONTENTS_ID = #{projectContentsId}
+		
+		
+	</update>
+	
+	<select id="getProjectContentsList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ProjectDomain">
+		SELECT 	/*	 projectRepository.getProjectContentsList   프로젝트 컨텐츠 조회    */
+			PROJECT_CONTENTS_ID		AS projectContentsId,
+			USER_ID					AS userId,
+			SKILL_CODE				AS skillCode, 
+			CONTENTS_TYPE_CODE		AS contentsTypeCode,
+			CONTENTS_NAME			AS contentsName,
+			CONTENTS_URL			AS contentsUrl,
+			CONTENTS_PATH			AS contentsPath,
+			CONTENTS				AS contents,
+			IS_DELETE				AS isDelete,
+			PROJECT_ID				AS projectId,
+			convert(varchar, CREATED_DATE, 102) 		AS createdDate	,
+			convert(varchar, dbo.dReturnDates(UPDATED_DATE, #{local}), 102)         AS updatedDate    
+		FROM T_PROJECT_CONTENTS 
+		WHERE USER_ID = #{userId}
+			AND PROJECT_ID = #{projectId}
+			AND IS_DELETE = 'N'
+		ORDER BY UPDATED_DATE DESC
+	</select>
+	
+	<select id="getProjectContentsInfo" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ProjectDomain">
+		SELECT 	/*	 projectRepository.getProjectContentsInfo   프로젝트 컨텐츠 상세 조회    */
+			PROJECT_CONTENTS_ID		AS projectContentsId,
+			USER_ID					AS userId,
+			SKILL_CODE				AS skillCode, 
+			CONTENTS_TYPE_CODE		AS contentsTypeCode,
+			CONTENTS_NAME			AS contentsName,
+			CONTENTS_URL			AS contentsUrl,
+			CONTENTS_PATH			AS contentsPath,
+			CONTENTS				AS contents,
+			IS_DELETE				AS isDelete,
+			PROJECT_ID				AS projectId,
+			CREATED_DATE			AS createdDate,
+			UPDATED_DATE			AS updatedDate	
+		FROM T_PROJECT_CONTENTS 
+		WHERE USER_ID = #{userId}
+			AND PROJECT_ID = #{projectId}
+			AND PROJECT_CONTENTS_ID = #{projectContentsId}
+		ORDER BY UPDATED_DATE DESC;
+	</select>
+	
+	
+	<select id="getContentsImageList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ProjectDomain">
+		SELECT 	/*	 projectRepository.getProjectContentsList   프로젝트 컨텐츠 조회    */
+			PROJECT_CONTENTS_ID		AS projectContentsId,
+			USER_ID					AS userId,
+			SKILL_CODE				AS skillCode, 
+			CONTENTS_TYPE_CODE		AS contentsTypeCode,
+			CONTENTS_NAME			AS contentsName,
+			CONTENTS_URL			AS contentsUrl,
+			CONTENTS_PATH			AS contentsPath,
+			CONTENTS				AS contents,
+			IS_DELETE				AS isDelete,
+			PROJECT_ID				AS projectId,
+			CREATED_DATE			AS createdDate,
+			UPDATED_DATE			AS updatedDate	
+		FROM T_PROJECT_CONTENTS 
+		WHERE USER_ID = #{userId}
+			AND PROJECT_ID =  #{projectId}
+			AND CONTENTS_TYPE_CODE =  '1901'
+			AND IS_DELETE = 'N'
+		ORDER BY UPDATED_DATE DESC
+	</select>
+	
+	
+	
+	<delete id="badgeDelete" parameterType="map">
+		/*	 projectRepository.badgeDelete   프로젝트 컨텐츠 삭제     */
+		DELETE FROM T_PROJECT_CONTENTS WHERE USER_ID = #{userId} AND CONTENTS_TYPE_CODE = '1907' AND PROJECT_ID = #{projectId}
+	</delete>
+	
+
+	
+	<update id="delProject" parameterType="map"  >
+		UPDATE T_PROJECT	/*	projectRepository.delProject  프로젝트 삭제   */
+			SET					
+				IS_DELETE	= 'Y'
+		<if test="portfolioId != null">
+			WHERE PORTFOLIO_ID = #{portfolioId}
+		</if>
+		<if test="projectId != null">
+			WHERE PROJECT_ID = #{projectId}
+		</if>
+		
+	</update>
+	
+	
+	
+	<update id="delProjectContents" parameterType="map"  >
+		UPDATE T_PROJECT_CONTENTS	/*	projectRepository.delProject  프로젝트 컨텐츠 삭제   */
+			SET					
+				IS_DELETE	= 'Y'		
+		WHERE USER_ID = #{userId}
+		<if test="projectId != null">
+			AND PROJECT_ID = #{projectId}
+		</if>
+		<if test="projectContentsId != null">
+			AND PROJECT_CONTENTS_ID = #{projectContentsId}
+		</if>
+		
+	</update>
+	
+	
+	
+	<select id="getBadgeList"  parameterType="String" resultType="com.iscreammedia.clic.front.domain.BadgeDomain">	
+		
+		SELECT 	/*	 projectRepository.getBadgeContentsList   뱃지 조회    */
+			A.BADGE_ID 							AS badgeId,
+			B.SKILL_CODE						AS skillCode,
+			B.SKILL_NAME_${language.code}					AS skillName,				
+			<!-- B.SKILL_NAME_SPA					AS skillNameSpa, -->
+			A.BADGE_NAME_${language.code}					AS badgeName,
+			<!-- A.BADGE_NAME_SPA					AS badgeNameSpa, -->
+			A.BADGE_DEFAULT_IMAGE_PATH_${language.code}		AS badgeDefaultImagePath,
+			<!-- A.BADGE_DEFAULT_IMAGE_PATH_SPA		AS badgeDefaultImagePathSpa, -->
+			A.BADGE_OBTAIN_IMAGE_PATH_${language.code}		AS badgeObtainImagePath,
+			<!-- A.BADGE_OBTAIN_IMAGE_PATH_SPA		AS badgeObtainImagePathSpa, -->
+			A.BADGE_CONTENTS_${language.code}				AS badgeContents,
+			<!-- A.BADGE_CONTENTS_SPA				AS badgeContentsSpa, -->
+			A.CREATOR							AS creator,
+			A.UPDATER							AS updater,
+			A.CREATED_DATE						AS createdDate,
+			A.UPDATED_DATE						AS updatedDate
+		FROM T_BADGE A, T_SKILL B , T_HAVE_SKILL C
+		WHERE A.BADGE_ID = B.BADGE_ID	
+		AND B.SKILL_CODE = C.SKILL_CODE
+		AND B.IS_USE = 'Y'	
+		AND C.SKILL_PROGRESS_LEVEL_CODE = '1205'
+		AND  C.USER_ID = #{userId}
+		ORDER BY A.UPDATED_DATE DESC
+	</select>
+	
+	
+	<update id="projectLikeSave" parameterType="map"  >
+		UPDATE T_PROJECT	/*	projectRepository.projectLikeSave  프로젝트 좋아요   */		
+			<if test='likeStatus.equals("Y")'>			
+				SET LIKE_COUNT = (LIKE_COUNT +1) 
+			</if>
+			<if test='likeStatus.equals("N")'>		
+				SET LIKE_COUNT = (LIKE_COUNT -1) 
+			</if>	
+		WHERE PROJECT_ID = #{projectId}
+	</update>
+	
+	<update id="portfolioLikeSave" parameterType="map"  >
+		UPDATE T_PORTFOLIO	/*	projectRepository.projectLikeSave  포토폴리오 좋아요   */		
+			<if test='likeStatus.equals("Y")'>			
+				SET LIKE_COUNT = (LIKE_COUNT +1) 
+			</if>
+			<if test='likeStatus.equals("N")'>		
+				SET LIKE_COUNT = (LIKE_COUNT -1) 
+			</if>	
+		WHERE PORTFOLIO_ID = #{portfolioId}
+	</update>
+		
+	
+	<insert id="projectLikeHistory" parameterType="map">
+		INSERT INTO T_LIKE_HISTORY   /*	 projectRepository.projectLikeHistory   프로젝트 좋아요 히스토리 등록    */
+		(				
+			PROJECT_ID,
+			LIKE_STATUS,
+			USER_ID,
+			LIKE_USER_ID,
+			CREATED_DATE		
+		)
+		VALUES
+		(
+			#{projectId},
+			#{likeStatus},
+			#{userId},
+			#{likeUserId},			
+			GETDATE()		
+		)
+	</insert>
+	
+	<select id="getLikeStatus" parameterType="map" resultType="String">
+		SELECT TOP 1
+			LIKE_STATUS AS likeStatus
+		FROM T_LIKE_HISTORY 
+		WHERE PROJECT_ID = #{projectId}
+			AND USER_ID = #{userId}
+			AND LIKE_USER_ID = #{likeUserId}
+		ORDER BY CREATED_DATE DESC
+	</select>
+	
+	
+		
+	
+</mapper>

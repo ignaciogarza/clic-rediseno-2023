@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.iscreammedia.clic.front.repository.EducationRepository">	
+	
+	<select id="getCountryListss"  parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommonDomain">
+		SELECT		/*	UserRepository.getCountryList   국가조회  */
+			COUNTRY_CODE,
+			COUNTRY_NAME_SPA,
+			COUNTRY_NAME_ENG			
+		FROM T_COUNTRY_TABLE	
+		<if test="countryCode != ''">
+			WHERE  COUNTRY_CODE = #{countryCode}
+		</if>
+		
+		LIMIT #{startNum}, #{endNum}	
+	</select>
+	
+	
+</mapper>

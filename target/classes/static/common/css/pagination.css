@@ -1,0 +1,96 @@
+/*====================================================*/
+.pagination {
+  display: flex;
+  padding-left: 359px;
+  list-style: none;
+  border-radius: 0.25rem; }
+
+.page-link {
+  position: relative;
+  display: block;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 5px;
+  margin-left: -1px;
+  line-height: 29px;
+  text-align: center;
+  color: #999;
+  background-color: #fff;
+  border-radius: 4px;
+  margin-right: 10px; }
+  .page-link:hover {
+    z-index: 2;
+    color: #fff;
+    text-decoration: none;
+    background-color: #414140;
+    border-color: #414140; }
+    .page-link:hover.page-arrow {
+      color: #fff; }
+  .page-link:focus {
+    z-index: 3;
+    outline: 0;
+    background-color: #ababab; }
+    .page-link:focus.page-arrow {
+      color: #fff; }
+  .page-link.page-arrow {
+    color: #c2c2c2;
+    border: 1px solid #c2c2c2;
+    font-size: 19px; }
+    .page-link.page-arrow:hover {
+      color: #333;
+      background: #C2C2C2; }
+    .page-link.page-arrow:focus {
+      color: #333;
+      background: #ababab; }
+
+.page-item:first-child .page-link {
+  margin-left: 0;
+  border-top-left-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem; }
+
+.page-item:last-child .page-link {
+  border-top-right-radius: 0.25rem;
+  border-bottom-right-radius: 0.25rem; }
+
+.page-item.active .page-link {
+  z-index: 3;
+  color: #fff;
+  background-color: #414140;
+  border-color: #414140; }
+
+.page-item.disabled .page-link {
+  color: rgba(194, 194, 194, 0.5);
+  pointer-events: none;
+  cursor: auto;
+  background-color: #fff;
+  border-color: rgba(194, 194, 194, 0.5); }
+
+.pagination-lg .page-link {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.5rem;
+  line-height: 1.5; }
+
+.pagination-lg .page-item:first-child .page-link {
+  border-top-left-radius: 0.3rem;
+  border-bottom-left-radius: 0.3rem; }
+
+.pagination-lg .page-item:last-child .page-link {
+  border-top-right-radius: 0.3rem;
+  border-bottom-right-radius: 0.3rem; }
+
+.pagination-sm .page-link {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5; }
+
+.pagination-sm .page-item:first-child .page-link {
+  border-top-left-radius: 0.2rem;
+  border-bottom-left-radius: 0.2rem; }
+
+.pagination-sm .page-item:last-child .page-link {
+  border-top-right-radius: 0.2rem;
+  border-bottom-right-radius: 0.2rem; }
+  
+  
+  
+/*====================================================*/

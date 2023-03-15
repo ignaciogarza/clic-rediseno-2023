@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iscreammedia.clic.front.repository.CertificateRepository">
+
+	<select id="getHaveSkillList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.Skill">
+		/* certificate.getHaveSkillList : 보유 스킬 목록 조회 */
+		SELECT
+		<include refid="com.iscreammedia.clic.front.repository.EvaluationRepository.columnSkill"/>
+			,dbo.dReturnDates(HS.UPDATED_DATE, #{local}) AS UPDATED_DATE
+			,ISNULL(SEPS1.FINAL_SCORE, 0)                                AS SELF_FINAL_SCORE
+			,ISNULL(SEPS2.FINAL_SCORE, 0)                                AS SKILL_FINAL_SCORE
+			,ISNULL(SPS.FRIEND_RECOMMEND_COUNT, 0)                       AS FRIEND_RECOMMEND_COUNT
+		<include refid="com.iscreammedia.clic.front.repository.EvaluationRepository.fromSkill"/>
+		LEFT JOIN
+			T_SELF_EXAM_PROGRESS_STATUS SEPS1
+				ON  SEPS1.SELF_EXAM_ID = SPS.SELF_EXAM_ID
+				AND SEPS1.USER_ID = SPS.USER_ID
+		LEFT JOIN
+			T_SKILL_EXAM_PROGRESS_STATUS SEPS2
+				ON  SEPS2.SKILL_EXAM_ID = SPS.SKILL_EXAM_ID
+				AND SEPS2.USER_ID = SPS.USER_ID
+		WHERE
+			HS.SKILL_PROGRESS_LEVEL_CODE = '1205'
+		ORDER BY HS.UPDATED_DATE DESC
+	</select>
+</mapper>

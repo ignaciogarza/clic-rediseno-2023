@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iscreammedia.clic.front.repository.NoticeRepository">
+
+	<select id="getNoticeCount" parameterType="map" resultType="int">
+		/* notice.getNoticeList : 알림 총 개수 */
+		SELECT
+			COUNT(*)
+		<include refid="fromNotice"/>
+		<include refid="whereNotice"/>
+	</select>
+
+	<select id="getNoticeList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.Notice">
+		/* notice.getNoticeList : 알림 목록 조회 */
+		SELECT
+			N.NOTICE_ID
+			,CASE N.NOTICE_TYPE_CODE
+				WHEN '0801' THEN 'FRIEND_REQUEST'
+				WHEN '0802' THEN 'SKILL_AUTH_REQUEST'
+				WHEN '0803' THEN 'SKILL_AUTH_COMPLETE'
+				WHEN '0804' THEN 'BADGE_OBTAIN'
+				WHEN '0805' THEN 'PROJECT_LIKE'
+			END AS NOTICE_TYPE_CODE
+			,N.NOTICE_MESSAGE
+			,N.PARAMETER_1
+			,N.PARAMETER_2
+			,N.PARAMETER_3
+			,N.PARAMETER_4
+			,N.PARAMETER_5
+			,dbo.dReturnDates(N.CREATED_DATE, #{local}) AS CREATED_DATE
+			,N.CONFIRMATION_DATE
+			,U.COUNTRY_CODE
+			,U.NAME
+			,U.FIRSTNAME
+			,U.NICKNAME
+			,U.USER_IMAGE_PATH
+			,B.BADGE_ID
+			,B.BADGE_NAME_${language.code}                 AS BADGE_NAME
+			,B.BADGE_OBTAIN_IMAGE_PATH_${language.code}    AS BADGE_OBTAIN_IMAGE_PATH
+		<include refid="fromNotice"/>
+		<include refid="whereNotice"/>
+		ORDER BY N.CREATED_DATE DESC
+		OFFSET ${offset} ROW
+		FETCH NEXT ${limit} ROW ONLY
+	</select>
+
+	<select id="confirmNewNotice" parameterType="map" resultType="boolean">
+		/* notice.confirmNewNotice : 신규 알림 확인 */
+		SELECT
+			COUNT(*) AS IS_CONFIRMATION
+		<include refid="fromNotice"/>
+		<include refid="whereNotice"/>
+		AND N.CONFIRMATION_DATE IS NULL
+	</select>
+
+	<sql id="fromNotice">
+		FROM
+			T_NOTICE N
+		JOIN
+			T_USER U
+				ON U.USER_ID = N.NOTICE_USER_ID
+		LEFT JOIN
+			T_SKILL S
+				ON  S.SKILL_CODE = N.PARAMETER_2
+				AND S.EXAM_CLASS_CODE = N.PARAMETER_3
+				AND (N.NOTICE_TYPE_CODE = '0803' OR N.NOTICE_TYPE_CODE = '0804')
+		LEFT JOIN
+			T_BADGE B
+				ON B.BADGE_ID = S.BADGE_ID
+	</sql>
+
+	<sql id="whereNotice">
+		WHERE
+			N.USER_ID = #{userId}
+	</sql>
+
+	<insert id="insertNotice" parameterType="com.iscreammedia.clic.front.domain.Notice">
+		/* notice.insertNotice : 알림 등록 */
+		INSERT INTO T_NOTICE (USER_ID, NOTICE_USER_ID, NOTICE_TYPE_CODE, NOTICE_MESSAGE, PARAMETER_1, PARAMETER_2, PARAMETER_3, PARAMETER_4, PARAMETER_5, CREATED_DATE)
+		VALUES(
+			#{userId}
+			,#{noticeUserId}
+			,#{noticeTypeCode.codes}
+			,#{noticeMessage}
+			,#{parameter1, jdbcType=VARCHAR}
+			,#{parameter2, jdbcType=VARCHAR}
+			,#{parameter3, jdbcType=VARCHAR}
+			,#{parameter4, jdbcType=VARCHAR}
+			,#{parameter5, jdbcType=VARCHAR}
+			,GETDATE()
+		)
+	</insert>
+
+	<update id="updateNoticeConfirmation" parameterType="map">
+		/* notice.updateNoticeConfirmation : 알림 확인 */
+		UPDATE
+			T_NOTICE
+		SET
+			CONFIRMATION_DATE = GETDATE()
+		WHERE
+			USER_ID = #{userId}
+		AND CONFIRMATION_DATE IS NULL
+	</update>
+
+	<delete id="deleteNoticeOlder3Months">
+		/* notice.deleteNoticeOlder3Months : 3개월(12주, 84일)된 알림 삭제 */
+		DELETE
+		FROM
+			T_NOTICE
+		WHERE
+			CREATED_DATE <![CDATA[ < ]]> DATEADD(DAY, -84, GETDATE())
+	</delete>
+</mapper>

@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.iscreammedia.clic.front.repository.DashboardRepository">	
+
+	<select id="getStcCodeMemberList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">
+		SELECT /* DashboardRepository.getStcCodeMemberList */ 
+           A.MINOR                                AS minor
+           <if test="major == 'jobCode'.toString()">
+           , ISNULL(  (SELECT CASE WHEN 'en' = #{language} THEN JOB_NAME_ENG ELSE JOB_NAME_SPA END FROM T_JOB_TABLE WHERE JOB_ID = A.MINOR ), 'ETC' ) AS label
+	      </if>   
+	      <if test="major != 'jobCode'.toString()">
+	          , ISNULL( dbo.fn_get_code_nm( #{language}, A.MINOR ), 'ETC' ) AS label
+	      </if>
+         <!-- , ISNULL( dbo.fn_get_code_nm( #{language}, A.MINOR ), 'ETC' ) AS label -->
+         , ISNULL( SUM(A.USER_CNT), 0 )                  AS value
+      FROM T_STC_CODE_USER A
+      WHERE A.STC_TYPE = #{stcType}
+      AND   A.MAJOR = #{major} 
+      AND COUNTRY_CODE='CO' 
+      <if test="major == 'jobCode'.toString()">
+       AND A.MINOR NOT IN ('0000') 
+      </if>
+         
+      <if test="cityId != null and cityId != '' ">
+         AND   A.CITY_ID = #{cityId} 		
+      </if>
+      <if test="searchDate == 7">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+	  </if>
+      <if test="searchDate == 1">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+	  </if>
+	  <if test="searchDate == 3">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+	  </if>
+      
+      GROUP BY A.MINOR, A.MINOR
+      ORDER BY A.MINOR ASC
+	</select>	
+	
+	<select id="getStcCodeSkillList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">
+		SELECT /* DashboardRepository.getStcCodeSkillList */ 
+           A.MINOR                                AS minor
+         <if test="major == 'jobCode'.toString()">
+           , ISNULL( (SELECT CASE WHEN 'en' = #{language} THEN JOB_NAME_ENG ELSE JOB_NAME_SPA END FROM T_JOB_TABLE WHERE JOB_ID = A.MINOR ), 'ETC' ) AS label
+	      </if>   
+	      <if test="major != 'jobCode'.toString()">
+	          , ISNULL( dbo.fn_get_code_nm( #{language}, A.MINOR ), 'ETC' ) AS label
+	      </if>
+         , ISNULL( SUM(A.USER_CNT), 0 )                  AS value
+      FROM T_STC_SKILL_CODE_USER A
+      WHERE A.SKILL_STC_CODE = #{skillStcCode}
+      AND   A.MAJOR = #{major}
+      AND 	A.COUNTRY_CODE='CO'
+      <if test="major == 'jobCode'.toString()">
+      	AND A.MINOR NOT IN ( '0000') 
+      </if>
+      <if test="cityId != null and cityId != '' ">
+         AND   A.CITY_ID = #{cityId} 		
+      </if>
+      <if test="searchDate == 7">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+	  </if>
+      <if test="searchDate == 1">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+	  </if>
+	  <if test="searchDate == 3">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+	  </if>
+      
+      GROUP BY A.MINOR, A.MINOR
+      ORDER BY A.MINOR ASC
+	</select>
+	
+	<select id="getUserCount" parameterType="map" resultType="int">
+		SELECT	/* DashboardRepository.getUserCount 사용자 카운트 */   			
+			ISNULL( SUM(REG_USER_CNT), 0 )  AS userCnt
+		FROM T_STC_USER
+		WHERE 1=1 
+		  <if test="cityId != null and cityId != '' ">
+	         AND   CITY_ID = #{cityId} 		
+	      </if>	 
+		  <if test="searchDate == 7">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+		  </if>
+	      <if test="searchDate == 1">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+		  </if>
+		  <if test="searchDate == 3">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+		  </if>
+	</select>
+	
+	<select id="getSkillTestCount" parameterType="map" resultType="int">
+		SELECT	/* DashboardRepository.getSkillTestCount 테스트  */   
+			<!-- SUM(USER_CNT)  AS skillCnt -->
+			ISNULL( SUM(USER_CNT) , 0 ) AS skillCnt
+		FROM T_STC_SKILL_CODE_USER
+		WHERE SKILL_STC_CODE = #{skillStcCode}
+		  AND   MAJOR = '03'
+		  AND COUNTRY_CODE='CO' 
+		  <if test="cityId != null and cityId != '' ">
+	         AND   CITY_ID = #{cityId} 		
+	      </if>	
+		 <if test="searchDate == 7">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+		  </if>
+	      <if test="searchDate == 1">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+		  </if>
+		  <if test="searchDate == 3">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+		  </if>
+	</select>
+	
+	<select id="getDocumentTypeCount" parameterType="map" resultType="int">
+		SELECT	/* DashboardRepository.getDocumentTypeCount 회원수/이력서/포토폴리오  */   			
+			ISNULL( SUM(USER_CNT), 0 )  AS documentTypeCnt
+		FROM T_STC_CODE_USER
+		WHERE STC_TYPE = #{stcType}
+			 AND   MAJOR = '03'
+			 AND COUNTRY_CODE='CO' 
+		  <if test="cityId != null and cityId != '' ">
+	         AND   CITY_ID = #{cityId} 		
+	      </if>	
+		  <if test="searchDate == 7">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+		  </if>
+	      <if test="searchDate == 1">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+		  </if>
+		  <if test="searchDate == 3">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+		  </if>		
+	</select>
+	
+	<select id="getCityUserList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">
+		SELECT 	/* DashboardRepository.getCityUserList 회원수/이력서/포토폴리오 도시별 카운트  */   	
+			CITY_ID		AS cityId, 		
+			SUM(USER_CNT) AS value		
+		FROM T_STC_CODE_USER		
+		WHERE STC_TYPE = #{stcType}		 
+		AND   MAJOR = '03' 
+		  <if test="searchDate == 7">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+		  </if>
+	      <if test="searchDate == 1">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+		  </if>
+		  <if test="searchDate == 3">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+		  </if>
+		GROUP BY CITY_ID
+	</select> 
+	
+	<select id="getCitySkillList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">
+		SELECT 	/* DashboardRepository.getCitySkillList 테스트 스킬 도시별 카운트  */   	
+			CITY_ID AS cityId, 		
+			SUM(USER_CNT) AS value		
+		FROM T_STC_SKILL_CODE_USER		
+		WHERE SKILL_STC_CODE = #{skillStcCode}	
+		<if test="skillCode != null and skillCode != '' ">
+		AND  SKILL_CODE = #{skillCode}
+		</if>
+		<if test="examClassCode != null and examClassCode != '' ">
+      	AND   EXAM_CLASS_CODE = #{examClassCode}
+      	</if>
+      		 
+		AND   MAJOR = '03' 
+			<if test="searchDate == 7">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+		  </if>
+	      <if test="searchDate == 1">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+		  </if>
+		  <if test="searchDate == 3">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+		  </if>
+		GROUP BY CITY_ID
+	</select>
+	
+    <resultMap id="SurveyVOResult" type="com.iscreammedia.clic.front.domain.DashboardDomain" >
+          <id    property="questionId"          column="QUESTIONID"/>   
+          <id    property="searchDate"          column="SEARCHDATE"/> 
+          <id    property="language"          column="LANGUAGE"/>               
+          <result property="isUse"             column="isUse"/>
+          <result property="questionNumber"       column="questionNumber"/>
+          <result property="createDate"          column="createDate"/>
+          <result property="questionTitleEng"    column="questionTitleEng"/>
+          <collection property="exampleList" column="{searchDate=SEARCHDATE, questionId=QUESTIONID, language=LANGUAGE}" javaType="java.util.ArrayList" select="getIctSurveyExampleList" ofType="SurveyVO"/>
+	</resultMap>
+	
+    <select id="getIctResultList" parameterType="map" resultMap="SurveyVOResult">
+	      SELECT /* DashboardRepository.getIctResultList */ 
+	          A.QUESTION_ID                          AS questionId 
+	         ,A.IS_USE                           AS isUse
+	         ,A.QUESTION_NUMBER                       AS questionNumber    
+	         ,A.CREATED_DATE                          AS createDate 	         
+	      <if test="language == 'en'">
+	           ,A.QUESTION_TITLE_ENG                  AS questionTitleEng    
+	      </if>   
+	      <if test="language != 'en'">
+	           ,A.QUESTION_TITLE_SPA                  AS questionTitleEng
+	      </if>      
+	           ,${searchDate} as searchDate   
+	           ,'${language}' as language   
+	      FROM T_SURVEY_QUESTION   A   
+	      WHERE A.IS_USE = 'Y'
+	      <if test="questionId != null">
+	      	AND A.QUESTION_ID = #{questionId} 
+	      </if>
+	     
+	      ORDER BY A.QUESTION_NUMBER ASC      
+    </select>
+   
+   
+    <select id="getIctSurveyExampleList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">
+	      SELECT /* QuestionMapper.getIctSurveyExampleList */ 
+           X.EXAMPLE_ID                           AS exampleId                  
+          ,X.QUESTION_ID                          AS questionId
+          <if test="language == 'en'">
+	           ,X.EXAMPLE_TITLE_ENG               AS exampleTitleEng
+	      </if>   
+	      <if test="language != 'en'">
+	           ,X.EXAMPLE_TITLE_SPA               AS exampleTitleEng   
+	      </if>  
+         ,X.EXAMPLE_NUMBER                        AS exampleNumber
+         ,X.answerCnt
+         ,CASE WHEN X.total = 0 THEN 0
+               ELSE ISNULL( FLOOR(( ROUND( convert(float,X.answerCnt) / convert(float,X.total) , 2 ) * 100 )) , 0 ) END AS answerRate
+      FROM (         
+            SELECT  
+                A.*
+               ,(SELECT ISNULL(SUM(USER_CNT),0) FROM T_STC_SURVEY_CODE_USER WHERE MAJOR = '03' AND QUESTION_ID = A.QUESTION_ID AND COUNTRY_CODE='CO')   AS total
+               ,(SELECT ISNULL(SUM(USER_CNT),0) FROM T_STC_SURVEY_CODE_USER WHERE MAJOR = '03' AND QUESTION_ID = A.QUESTION_ID AND COUNTRY_CODE='CO'
+                  AND EXAMPLE_ID = A.EXAMPLE_ID 
+                  <if test="searchDate == 7">
+					 AND CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+				  </if>
+			      <if test="searchDate == 1">
+					 AND CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+				  </if>
+				  <if test="searchDate == 3">
+					 AND CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+				  </if>
+                  )  AS answerCnt                                              
+            FROM T_SURVEY_EXAMPLE   A 
+            WHERE A.QUESTION_ID = #{questionId} 
+           ) X
+      ORDER BY X.EXAMPLE_NUMBER ASC
+      
+    </select>
+    
+    
+    <select id="getSurveyCodeList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">
+		SELECT /* DashboardRepository.getSurveyCodeList	설문조사 성별/연령/학력/경력/직업 조회  */ 
+           A.MINOR                                AS minor
+         <if test="major == 'jobCode'.toString()">
+           , ISNULL((SELECT CASE WHEN 'en' = #{language} THEN JOB_NAME_ENG ELSE JOB_NAME_SPA END FROM T_JOB_TABLE WHERE JOB_ID = A.MINOR ), 'ETC' ) AS label
+	      </if>   
+	      <if test="major != 'jobCode'.toString()">
+	          , ISNULL( dbo.fn_get_code_nm( #{language}, A.MINOR ), 'ETC' ) AS label
+	      </if>
+         , ISNULL( SUM(A.USER_CNT), 0 )                  AS value
+      FROM T_STC_SURVEY_CODE_USER A
+      WHERE   A.MAJOR = #{major} 
+      AND   A.QUESTION_ID = #{questionId}     
+      AND   A.EXAMPLE_ID = #{exampleId} 
+      AND COUNTRY_CODE='CO'   
+      <if test="major == 'jobCode'.toString()">
+      	AND A.MINOR NOT IN ( '0000') 
+      </if>     
+      <if test="cityId != null and cityId != '' ">
+         AND   A.CITY_ID = #{cityId} 		
+      </if>
+      <if test="searchDate == 7">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+	  </if>
+      <if test="searchDate == 1">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+	  </if>
+	  <if test="searchDate == 3">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+	  </if>
+      
+      GROUP BY A.MINOR, A.MINOR
+	</select>
+	
+	<select id="getSurveyCityIdList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">
+			SELECT 				/* DashboardRepository.getSurveyCityIdList	설문조사 도시별 조회  */ 
+				CITY_ID		AS cityId, 					
+				SUM(USER_CNT) AS value				
+				FROM T_STC_SURVEY_CODE_USER		
+			WHERE    QUESTION_ID = #{questionId}   	
+				AND EXAMPLE_ID = #{exampleId}    		
+			  <if test="searchDate == 7">
+				 AND CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+			  </if>
+		      <if test="searchDate == 1">
+				 AND CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+			  </if>
+			  <if test="searchDate == 3">
+				 AND CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+			  </if>
+			GROUP BY CITY_ID
+	</select>
+	
+	
+	
+	<select id="getSkillReportList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">
+    
+      SELECT 		/* DashboardRepository.getSkillReportList	스킬 조회  */ 
+           A.SKILL_CODE            AS skillCode
+          ,A.EXAM_CLASS_CODE         AS examClassCode
+          ,CASE WHEN 'en' = #{language} THEN A.SKILL_NAME_ENG ELSE A.SKILL_NAME_SPA END AS skillCodeNm
+          ,(SELECT ISNULL( SUM( USER_CNT ), 0 ) FROM T_STC_SKILL_CODE_USER WHERE SKILL_STC_CODE = 'TOTAL' 
+            AND SKILL_CODE = A.SKILL_CODE AND EXAM_CLASS_CODE = A.EXAM_CLASS_CODE AND MAJOR = '03'  AND COUNTRY_CODE='CO' ) AS totalUserCnt
+          ,(SELECT ISNULL(SUM( USER_CNT ), 0 ) FROM T_STC_SKILL_CODE_USER WHERE SKILL_STC_CODE = 'SELF' 
+            AND SKILL_CODE = A.SKILL_CODE AND EXAM_CLASS_CODE = A.EXAM_CLASS_CODE AND MAJOR = '03'  AND COUNTRY_CODE='CO' ) AS selfUserCnt
+         ,(SELECT ISNULL(SUM( USER_CNT ), 0 ) FROM T_STC_SKILL_CODE_USER WHERE SKILL_STC_CODE = 'SKILL' 
+            AND SKILL_CODE = A.SKILL_CODE AND EXAM_CLASS_CODE = A.EXAM_CLASS_CODE AND MAJOR = '03'  AND COUNTRY_CODE='CO' ) AS skillUserCnt
+         ,(SELECT ISNULL(SUM( USER_CNT ), 0 ) FROM T_STC_SKILL_CODE_USER WHERE SKILL_STC_CODE = 'PASS' 
+            AND SKILL_CODE = A.SKILL_CODE AND EXAM_CLASS_CODE = A.EXAM_CLASS_CODE AND MAJOR = '03'  AND COUNTRY_CODE='CO' ) AS passUserCnt        
+      FROM T_SKILL A
+      WHERE A.IS_USE = 'Y'
+      ORDER BY A.SKILL_CODE 
+      
+   </select>
+   
+   <select id="getStcSkillCodeUserList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">
+   
+      SELECT 		/* DashboardRepository.getStcSkillCodeUserList	스킬별 코드 조회   */ 
+           A.MINOR                                AS minor     
+           <if test="major == 'jobCode'.toString()">
+           , ISNULL( (SELECT CASE WHEN 'en' = #{language} THEN JOB_NAME_ENG ELSE JOB_NAME_SPA END FROM T_JOB_TABLE WHERE JOB_ID = A.MINOR ), 'ETC' ) AS label
+	      </if>   
+	      <if test="major != 'jobCode'.toString()">
+	          , ISNULL( dbo.fn_get_code_nm( #{language}, A.MINOR ), 'ETC' ) AS label
+	      </if>
+         , ISNULL( SUM(A.USER_CNT), 0 )                  AS value
+      FROM T_STC_SKILL_CODE_USER A
+      WHERE A.SKILL_STC_CODE = #{skillStcCode}
+      AND   A.SKILL_CODE = #{skillCode}
+      AND   A.EXAM_CLASS_CODE = #{examClassCode}
+      AND   A.MAJOR = #{major}
+       AND A.COUNTRY_CODE='CO' 
+      <if test="major == 'jobCode'.toString()">
+     	 AND A.MINOR NOT IN ( '0000') 
+      </if>
+      <if test="cityId != null and cityId != '' ">
+         AND   A.CITY_ID = #{cityId} 		
+      </if>
+      <if test="searchDate == 7">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+	  </if>
+      <if test="searchDate == 1">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+	  </if>
+	  <if test="searchDate == 3">
+		 AND A.CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+	  </if>
+      GROUP BY A.MINOR
+      ORDER BY A.MINOR ASC
+      
+   </select>
+   
+   
+   <select id="getStcSkillCodeUserCount" parameterType="map" resultType="int">
+		 SELECT				/* DashboardRepository.getStcSkillCodeUserCount	스킬 전체/자기평가/기술테스트/테스트통과  카운트 조회  */ 	
+			ISNULL( SUM(USER_CNT), 0 )  AS totalUserCnt
+		FROM T_STC_SKILL_CODE_USER
+		WHERE SKILL_STC_CODE = #{skillStcCode}
+			AND   SKILL_CODE = #{skillCode}
+	      	AND   EXAM_CLASS_CODE = #{examClassCode}
+			 AND   MAJOR = '03'
+			  AND COUNTRY_CODE='CO' 
+		  <if test="cityId != null and cityId != '' ">
+	         AND   CITY_ID = #{cityId} 		
+	      </if>	
+		  <if test="searchDate == 7">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -7, GETDATE()) AND GETDATE()
+		  </if>
+	      <if test="searchDate == 1">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -28, GETDATE()) AND GETDATE()
+		  </if>
+		  <if test="searchDate == 3">
+			 AND CREATED_DATE BETWEEN DATEADD(DAY, -84, GETDATE()) AND GETDATE()
+		  </if>		
+	</select>
+	
+	
+	<select id="getRankingList" parameterType="String" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">       
+		SELECT 		  	/* DashboardRepository.getRankingList	 랭킹조회  조회  */ 
+	    	TOP 7	
+			STC_RANK,			
+			TITLE_${language.code} AS title,		
+			USER_CNT                 AS userCnt
+	    FROM T_STC_RANK 
+		WHERE STC_TYPE = #{stcType}                                                                                                
+		
+			AND FORMAT( created_date, 'yyyy-MM-dd 00:00:00') = FORMAT( DATEADD(DAY, -1, GETDATE()), 'yyyy-MM-dd 00:00:00')
+		ORDER BY STC_RANK
+	</select>
+	
+	<select id="getRankingList02" parameterType="String" resultType="com.iscreammedia.clic.front.domain.DashboardDomain">       
+		SELECT 		  	/* DashboardRepository.getRankingList	 랭킹조회  조회  */ 
+	    	TOP 7	
+			STC_RANK,			
+			TITLE_${language.code} AS title,		
+			USER_CNT                 AS userCnt
+	    FROM T_STC_RANK 
+		WHERE STC_TYPE = #{stcType}                                                                                                
+		
+			AND FORMAT( created_date, 'yyyy-MM-dd 00:00:00') = FORMAT( DATEADD(DAY, -2, GETDATE()), 'yyyy-MM-dd 00:00:00')
+		ORDER BY STC_RANK
+	</select>
+	
+</mapper>

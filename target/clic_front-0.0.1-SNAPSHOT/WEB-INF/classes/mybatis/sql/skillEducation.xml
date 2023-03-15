@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iscreammedia.clic.front.repository.SkillEducationRepository">	
+
+	<select id="selectScrollList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.SkillEducationDomain">
+		SELECT		/*	SkillEducationRepository.selectScrollList   스킬 교육 조회 (페이징+검색) */
+			SE.SKILL_EDUCATION_ID
+			, SE.TITLE_${language.code} AS TITLE
+			, SE.CONTENTS_${language.code} AS CONTENTS
+			, SE.IMAGE_PATH
+			, SE.EDUCATION_PC_URL
+			, SE.EDUCATION_MOBILE_URL
+			, SE.EDUCATION_ORGANIZATION
+			, SE.EDUCATION_PERIOD
+			, CASE
+				CAST(SE.EDUCATION_COAST AS NVARCHAR) WHEN '0' THEN 'FREE'
+				ELSE CAST(SE.EDUCATION_COAST AS NVARCHAR)
+			END AS EDUCATION_COAST
+			, SE.IS_USE
+		FROM T_SKILL_EDUCATION SE
+		JOIN (
+				SELECT
+					SEM.SKILL_EDUCATION_ID
+				FROM T_SKILL_EDUCATION_MAPPING SEM
+				JOIN T_SKILL S ON S.SKILL_CODE = SEM.SKILL_CODE
+					AND S.EXAM_CLASS_CODE = SEM.EXAM_CLASS_CODE
+				<where>
+					AND S.IS_USE = 'Y'
+					<if test="skillCode != '' and examClassCode != ''">
+						AND S.SKILL_CODE = #{skillCode}
+						AND S.EXAM_CLASS_CODE = #{examClassCode}
+					</if>
+				</where>
+				GROUP BY SEM.SKILL_EDUCATION_ID
+			) JSEM ON JSEM.SKILL_EDUCATION_ID = SE.SKILL_EDUCATION_ID
+		WHERE SE.IS_USE = 'Y'
+		ORDER BY SE.CREATED_DATE DESC
+		OFFSET #{startNum} ROW
+		FETCH NEXT #{endNum} ROW ONLY
+	</select>
+	
+	<select id="selectSkillMappingList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.SkillEducationMappingDomain">
+		SELECT		/*	SkillEducationRepository.selectSkillMappingList   스킬 교육 매핑 조회*/
+			SEM.SKILL_EDUCATION_MAPPING_ID
+			, SEM.SKILL_EDUCATION_ID
+			, SEM.SKILL_CODE
+			, SEM.EXAM_CLASS_CODE
+			, S.SKILL_NAME_${language.code} AS SKILL_NAME
+		FROM T_SKILL_EDUCATION_MAPPING SEM
+		JOIN T_SKILL S ON S.SKILL_CODE = SEM.SKILL_CODE
+			AND S.EXAM_CLASS_CODE = SEM.EXAM_CLASS_CODE
+		JOIN T_SKILL_EDUCATION SE ON SE.SKILL_EDUCATION_ID = SEM.SKILL_EDUCATION_ID
+		WHERE SE.IS_USE = 'Y'
+			AND S.IS_USE = 'Y'
+			AND SEM.SKILL_EDUCATION_ID = #{skillEducationId}
+	</select>
+	
+	<select id="selectSkillList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.SkillEducationMappingDomain">
+		SELECT		/*	SkillEducationRepository.selectSkillList   스킬  이름  조회*/
+			S.SKILL_CODE
+			, S.EXAM_CLASS_CODE
+			, S.SKILL_NAME_${language.code} AS SKILL_NAME
+		FROM T_SKILL S
+		WHERE S.SKILL_CODE = ANY (
+			SELECT
+				SEM.SKILL_CODE
+			FROM T_SKILL_EDUCATION_MAPPING SEM
+			JOIN T_SKILL_EDUCATION SE ON SE.SKILL_EDUCATION_ID = SEM.SKILL_EDUCATION_ID
+			WHERE SEM.SKILL_CODE = S.SKILL_CODE
+				AND SEM.EXAM_CLASS_CODE = S.EXAM_CLASS_CODE
+				AND SE.IS_USE = 'Y'
+		)
+			AND S.IS_USE = 'Y'
+		ORDER BY SKILL_NAME ASC
+	</select>
+	
+	<select id="educationCk" resultType="int">
+		SELECT		/*	SkillEducationRepository.educationCk   스킬 교육 등록 체크*/
+			COUNT(SE.SKILL_EDUCATION_ID)
+		FROM T_SKILL_EDUCATION SE
+		JOIN (
+				SELECT
+					SEM.SKILL_EDUCATION_ID
+				FROM T_SKILL_EDUCATION_MAPPING SEM
+				JOIN T_SKILL S ON S.SKILL_CODE = SEM.SKILL_CODE
+					AND S.EXAM_CLASS_CODE = SEM.EXAM_CLASS_CODE
+					AND S.IS_USE = 'Y'
+				GROUP BY SEM.SKILL_EDUCATION_ID
+			) JSEM ON JSEM.SKILL_EDUCATION_ID = SE.SKILL_EDUCATION_ID
+		WHERE IS_USE = 'Y';
+	</select>
+	
+</mapper>

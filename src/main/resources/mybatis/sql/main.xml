@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.iscreammedia.clic.front.repository.MainRepository">	
+
+	<select id="getUserSearchCount" parameterType="String" resultType="Integer">
+		
+		SELECT		/*	MainRepository.getUserSearchCount   Member count lookup  */
+			COUNT(*)
+		FROM 
+			T_USER A, 
+			T_JOB_TABLE B
+		WHERE  A.JOB_ID = B.JOB_ID 
+		AND A.USER_TYPE_CODE != '0102'
+		<if test="searchValue != null and searchValue != '' ">
+		AND ( 
+				<!-- A.NAME LIKE CONCAT('%',#{searchValue},'%') 		
+				OR A.FIRSTNAME LIKE CONCAT('%',#{searchValue},'%')  -->
+				lower(A.NAME) LIKE CONCAT('%', #{searchValue}, '%')		
+				OR lower(A.FIRSTNAME) LIKE CONCAT('%', #{searchValue}, '%')
+			)
+		</if>
+	</select>
+	
+	<select id="getUserSearchList" parameterType="String" resultType="com.iscreammedia.clic.front.domain.UserDomain">
+		SELECT		/*	MainRepository.getUserSearchList   회원 조회  */
+			A.USER_ID, 					
+			A.CITY_ID,					
+			A.COUNTRY_CODE, 				
+			A.JOB_ID, 
+			B.JOB_NAME_ENG,
+			B.JOB_NAME_SPA,							
+			A.EMAIL, 					
+			A.PASSWORD, 					
+			A.USER_STATUS_CODE, 			
+			A.PASSWORD_IS_EARLY, 		
+			A.USER_TYPE_CODE,			
+			A.NAME, 						
+			A.FIRSTNAME, 				
+			A.YEAR, 						
+			A.MONTH,					 	
+			A.DAY,						
+			A.SEX_CODE, 					
+			A.EDUCATION_CODE,			
+			A.IS_STUDENT, 				
+			A.CAREER_CODE, 				
+			A.TELL, 						
+			A.USER_IMAGE_PATH, 			
+			A.USER_BACKGROUND_IMAGE_PATH,
+			A.LAST_LOGIN_DATE, 			
+			A.CREATED_DATE, 				
+			A.CREATOR, 					
+			A.UPDATED_DATE,				
+			A.UPDATER
+		FROM 
+			T_USER A, 
+			T_JOB_TABLE B
+		WHERE  A.JOB_ID = B.JOB_ID 
+		AND A.USER_TYPE_CODE != '0102'
+		<if test="searchValue != null and searchValue != '' ">
+		AND ( 
+				<!-- A.NAME LIKE CONCAT('%',#{searchValue},'%') 		
+				OR A.FIRSTNAME LIKE CONCAT('%',#{searchValue},'%')  -->
+				lower(A.NAME) LIKE CONCAT('%', #{searchValue}, '%')		
+				OR lower(A.FIRSTNAME) LIKE CONCAT('%', #{searchValue}, '%')
+			)
+		</if>	
+		ORDER BY A.NAME
+		
+		OFFSET  #{startIndex} ROWS
+		FETCH NEXT #{rows}	 ROWS ONLY
+	</select>
+	
+	
+	<select id="getPortfolioSearchCount" parameterType="String" resultType="Integer">
+		SELECT 	/*	MainRepository.getPortfolioSearchCount  포토폴리오 카운트 조회  */
+			COUNT(*)	
+		FROM T_PORTFOLIO A, T_USER B, T_JOB_TABLE C
+		WHERE  A.USER_ID = B.USER_ID 
+		AND B.JOB_ID = C.JOB_ID  
+		AND A.IS_DELETE = 'N'
+		AND A.PUBLIC_TYPE_CODE = '1801'
+		<if test="searchValue != null and searchValue != '' ">
+			AND A.TAG LIKE CONCAT('%',#{searchValue},'%')
+		</if>	
+	</select>
+	
+	<select id="getPortfolioSearchList" parameterType="String" resultType="com.iscreammedia.clic.front.domain.PortfolioDomain">
+		SELECT 	/*	MainRepository.getPortfolioSearchList  포토폴리오 조회  */
+			A.PORTFOLIO_ID 			AS portfolioId, 
+			A.USER_ID				AS userId, 
+			B.EMAIL 				AS email,
+			B.COUNTRY_CODE				AS countryCode, 		
+			B.FIRSTNAME				AS firstName, 
+			B.NAME					AS userName,	
+			B.USER_IMAGE_PATH		AS userImagePath, 		
+			C.JOB_NAME_ENG			AS jobNameEng,
+			C.JOB_NAME_SPA			AS jobNameSpa,	
+			A.SEQUENCE				AS sequence,
+			A.NAME 					AS name, 			
+			A.PUBLIC_TYPE_CODE		AS publicTypeCode,
+			A.INTRODUCTION			AS introduction, 
+			A.LIST_IMAGE_PATH		AS listImagePath, 
+			A.BACKGROUND_IMAGE_PATH	AS backgroundImagePath, 
+			A.IS_USE_QR				AS isUseQr,
+			A.TAG					AS tag,
+			A.IS_DELETE				AS isDelete, 
+			A.LIKE_COUNT			AS likeCount, 
+			A.PROJECT_COUNT			AS projectCount, 
+			A.CREATED_DATE			AS createdDate, 
+			A.UPDATED_DATE			AS updatedDate		
+		FROM T_PORTFOLIO A, T_USER B, T_JOB_TABLE C
+		WHERE  A.USER_ID = B.USER_ID
+		AND B.JOB_ID = C.JOB_ID  
+		AND A.PUBLIC_TYPE_CODE = '1801'
+		AND A.IS_DELETE = 'N'
+		<if test="searchValue != null and searchValue != '' ">
+			AND A.TAG LIKE CONCAT('%',#{searchValue},'%')
+		</if>
+		ORDER BY A.NAME DESC
+		OFFSET  #{startIndex} ROWS
+		FETCH NEXT #{rows}	 ROWS ONLY
+	</select>
+
+	<select id="getUserSurveyInfo" parameterType="String" resultType="com.iscreammedia.clic.front.domain.UserDomain">
+		SELECT 	/*	MainRepository.getUserInfo  회원 설문조사 참여조회 */
+			U.USER_ID, 					
+			SJH.IS_COMPLETE
+		FROM T_USER U
+		LEFT JOIN T_SURVEY_JOIN_HISTORY SJH
+			ON U.USER_ID = SJH.USER_ID
+		WHERE  U.USER_ID = #{userId}
+	</select>
+	
+	
+</mapper>

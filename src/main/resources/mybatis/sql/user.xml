@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.iscreammedia.clic.front.repository.UserRepository">	
+	
+	<select id="getEamilCk" parameterType="String" resultType="int">
+		SELECT		/*	UserRepository.getEamilCk   이메일 중복체크  */
+			count(USER_ID)
+		FROM T_USER 
+		WHERE EMAIL = #{email}
+	</select>
+	
+	<select id="getEamilNoStatusCk" parameterType="String" resultType="int">
+		SELECT		/*	UserRepository.getEamilNoStatusCk   이메일 인증 전 상태 체크  */
+			count(USER_ID)
+		FROM T_USER 
+		WHERE EMAIL = #{email}
+		AND USER_STATUS_CODE = '0201'
+	</select>
+	
+	
+	<insert id="userInsert" parameterType="com.iscreammedia.clic.front.domain.UserDomain">
+		INSERT INTO T_USER   /*	 UserRepository.userInsert   회원가입  */
+		(
+			USER_ID,			
+			EMAIL,
+			PASSWORD,
+			USER_STATUS_CODE, 			
+			USER_TYPE_CODE,
+			NAME,
+			JOB_ID,
+			FIRSTNAME,
+			CREATED_DATE,
+			CREATOR,			
+			OS_TYPE			
+		)
+		VALUES
+		(
+			#{userId},			
+			#{email},			
+			#{password},			
+			#{userStatusCode},
+			'0101', 
+			#{name},
+			'0000',
+			#{firstName},
+			GETDATE(),
+			#{creator},
+			#{osType}
+		)
+	</insert>
+	
+	<select id="getSurveyInfo" parameterType="String" resultType="com.iscreammedia.clic.front.domain.UserDomain">
+		SELECT		/*	UserRepository.getSurveyInfo   설문조사 조회  */
+			USER_ID, 					
+			IS_COMPLETE	
+		FROM T_SURVEY_JOIN_HISTORY			
+		WHERE USER_ID = #{userId}
+	</select>	
+	
+	<select id="getUserDetail" parameterType="String" resultType="com.iscreammedia.clic.front.domain.UserDomain">
+		SELECT		/*	UserRepository.getUserDetail   회원정보 조회  */
+			A.USER_ID, 					
+			A.CITY_ID,					
+			A.COUNTRY_CODE, 				
+			A.JOB_ID, 
+			B.JOB_NAME_ENG,
+			B.JOB_NAME_SPA,							
+			A.EMAIL, 					
+			A.PASSWORD, 					
+			A.USER_STATUS_CODE, 			
+			A.PASSWORD_IS_EARLY, 		
+			A.USER_TYPE_CODE,			
+			A.NAME, 						
+			A.FIRSTNAME, 				
+			A.YEAR, 						
+			A.MONTH,					 	
+			A.DAY,						
+			A.SEX_CODE, 					
+			A.EDUCATION_CODE,			
+			A.IS_STUDENT, 				
+			A.CAREER_CODE, 				
+			A.TELL, 						
+			A.USER_IMAGE_PATH, 			
+			A.USER_BACKGROUND_IMAGE_PATH,
+			A.LAST_LOGIN_DATE, 			
+			A.CREATED_DATE, 				
+			A.CREATOR, 					
+			A.UPDATED_DATE,				
+			A.UPDATER
+		FROM 
+			T_USER A, 
+			T_JOB_TABLE B
+		WHERE  A.JOB_ID = B.JOB_ID 
+		AND A.USER_STATUS_CODE NOT IN ('0201')
+		AND EMAIL = #{email}
+	</select>
+	
+	
+	<update id="userUpdate" parameterType="com.iscreammedia.clic.front.domain.UserDomain" >
+		UPDATE T_USER	/*	UserRepository.userUpdate   회원수정  */
+			SET	
+				NAME = #{name},
+				FIRSTNAME = #{firstName},
+				USER_STATUS_CODE =  #{userStatusCode},
+				YEAR = #{year},
+				MONTH = #{month},
+				DAY	= #{day},
+				SEX_CODE = #{sexCode},
+				TELL = #{tell},
+				COUNTRY_CODE = #{countryCode},
+				CITY_ID = #{cityId},
+				EDUCATION_CODE = #{educationCode},		
+				IS_STUDENT = #{isStudent},
+				JOB_ID = #{jobId},
+				CAREER_CODE	= #{careerCode},
+				UPDATED_DATE = GETDATE(),
+				UPDATER	= #{updater}
+		WHERE USER_ID = #{userId}
+	</update>
+	
+	
+	<update id="userPwUpdate" parameterType="com.iscreammedia.clic.front.domain.UserDomain" >
+		UPDATE T_USER	/*	UserRepository.userPwUpdate   회원 비밀번호 수정  */
+		SET
+			<!-- PASSWORD =SHA2(#{password, jdbcType=VARCHAR}, 256)	 -->
+			PASSWORD =#{password},
+			PASSWORD_IS_EARLY = #{passwordIsEarly}
+		WHERE USER_ID = #{userId}
+	</update>	
+	
+		
+	<select id="getEamilNo" parameterType="String" resultType="String">
+		SELECT				/*	UserRepository.getEamilNo   이메일인증번호 조회   */				
+			TOP 1
+			AUTH_NUMBER	
+			
+		FROM T_AUTH_NUMBER 
+		WHERE EMAIL = #{email}
+		ORDER BY created_date DESC 
+	</select>
+	
+	
+	<insert id="emailNoInsert" parameterType="com.iscreammedia.clic.front.domain.AuthNumberDomain">
+		INSERT INTO T_AUTH_NUMBER   /*	UserRepository.emailNoInsert   이메일인증번호 저장  */
+		(
+			EMAIL,		
+			AUTH_NUMBER,	
+			CREATED_DATE
+		)
+		VALUES
+		(
+			#{email},			
+			#{authNumber},
+			GETDATE()
+		)
+	</insert>
+	
+	
+	<update id="emailNoUpdate" parameterType="com.iscreammedia.clic.front.domain.AuthNumberDomain" >
+		UPDATE T_AUTH_NUMBER	/*	UserRepository.emailNoUpdate   이메일인증번호 수정  */
+		SET
+			AUTH_NUMBER = #{auth_number}
+		WHERE EMAIL = #{email}
+	</update>
+	
+	
+	<select id="getTermsList" resultType="com.iscreammedia.clic.front.domain.TermsAgreeDomain">
+		SELECT		/*	UserRepository.getTermsList   이용약관 조회  */
+			B.TERMS_ID 				AS termsId, 				
+			B.TERMS_TYPE_CODE		AS termsTypeCode, 		
+			B.TERMS_TITLE_ENG		AS termsTitleEng, 		
+			B.TERMS_TITLE_SPA		AS termsTitleSpa, 		
+			B.TERMS_CONTNETS_ENG	AS termsContnetsEng,	
+			B.TERMS_CONTNETS_SPA	AS termsContnetsSpa, 	
+			B.CONTENTS_STATUS_CODE	AS contentsStatusCode,  	
+			B.IS_MANDATORY			AS isMandatory, 			
+			B.CREATED_DATE			AS createdDate, 			
+			B.CREATOR				AS creator, 				
+			B.UPDATED_DATE			AS updatedDate, 			
+			B.UPDATER				AS updater
+		FROM T_TERMS B
+		WHERE B.TERMS_TYPE_CODE IN ('0901','0902')
+		ORDER BY B.CREATED_DATE DESC
+	</select>
+	
+		
+	<insert id="termsAgreeInsert" parameterType="com.iscreammedia.clic.front.domain.TermsAgreeDomain">
+		INSERT INTO T_TERMS_AGREE_HISTORY   /*	 UserRepository.termsAgreeInsert   이용약관 등록 */
+		(
+			USER_ID,			
+			TERMS_TYPE_CODE,			
+			CREATED_DATE, 			
+			TERMS_ID
+		)
+		VALUES
+		(
+			#{userId},			
+			#{termsTypeCode},
+			GETDATE(),
+			#{termsId}			
+		)
+	</insert>
+	
+	
+	<select id="getCountryList"  parameterType="String" resultType="com.iscreammedia.clic.front.domain.CommonDomain">
+		SELECT		/*	UserRepository.getCountryList   국가조회  */
+			COUNTRY_CODE,
+			COUNTRY_NAME_${language.code} AS countryName
+		FROM T_COUNTRY_TABLE
+		ORDER BY COUNTRY_NAME_${language.code}		
+	</select>
+	
+	
+	<select id="getCountryListss"  parameterType="map" resultType="com.iscreammedia.clic.front.domain.CommonDomain">
+		SELECT		/*	UserRepository.getCountryList   국가조회  */
+			COUNTRY_CODE,
+			COUNTRY_NAME_SPA,
+			COUNTRY_NAME_ENG			
+		FROM T_COUNTRY_TABLE	
+		<if test="countryCode != ''">
+			WHERE  COUNTRY_CODE = #{countryCode}
+		</if>
+		
+		
+	</select>
+	
+	<select id="getCityList"  parameterType="String" resultType="com.iscreammedia.clic.front.domain.CommonDomain">
+		SELECT		/*	UserRepository.getCityList   도시조회  */
+			CITY_ID,
+			COUNTRY_CODE,
+			CITY_NAME_${language.code} AS cityName
+				
+		FROM T_CITY_TABLE	
+		WHERE 1=1
+		AND COUNTRY_CODE = #{countryCode}
+		ORDER BY CITY_ID
+	</select>
+	
+	
+	<select id="getJobist"  parameterType="String" resultType="com.iscreammedia.clic.front.domain.CommonDomain">
+		SELECT		/*	UserRepository.getJobist   직업조회  */
+			JOB_ID,
+			JOB_NAME_${language.code} AS jobName
+		FROM T_JOB_TABLE		
+		WHERE JOB_ID != '0000'
+	</select>
+	
+	
+	<select id="getCodeTypeList"  parameterType="String" resultType="com.iscreammedia.clic.front.domain.CommonDomain">
+		SELECT 		/*	UserRepository.getCodeTypeList   코드조회  */
+			MAJOR,
+			MINOR,
+			IS_USE,
+			NAME_${language.code} AS name,
+			CONTENTS
+		FROM T_CODE
+			WHERE MAJOR= ${codeType}
+			AND IS_USE='Y' 
+			AND MINOR != '00'
+	</select>
+	
+	
+	<insert id="userSecessionInsert" parameterType="com.iscreammedia.clic.front.domain.UserDomain">
+		INSERT INTO T_LEAVE_USER   /*	 UserRepository.userSecessionInsert   회원가입  */
+		(
+			USER_ID,
+			LEAVE_REASON_CODE,
+			LEAVE_REASON,
+			OS_TYPE,
+			COUNTRY_CODE,
+			CITY_ID,
+			CREATED_DATE,
+			CREATOR			
+		)
+		VALUES
+		(
+			#{userId},
+			#{leverReasonCode},
+			#{leaveReason},
+			#{osType},
+			#{countryCode},
+			#{cityId},
+			GETDATE(),
+			#{creator}			
+		)
+	</insert>
+	
+	
+	<select id="getSurveyQuestionList"  parameterType="String" resultType="com.iscreammedia.clic.front.domain.SurveyDomain">
+		SELECT		/*	UserRepository.getSurveyQuestionList   설문조사 문항 조회  */
+			QUESTION_ID, 
+			SURVEY_ID,
+			QUESTION_TITLE_${language.code} AS questionTitle,
+			IS_USE, 
+			EXAMPLE_TYPE_CODE,
+			QUESTION_IMAGE_PATH_${language.code} AS questionImagePath,
+			CREATED_DATE,
+			CREATOR,
+			UPDATED_DATE,
+			UPDATER, 
+			QUESTION_NUMBER		
+		FROM T_SURVEY_QUESTION	
+		WHERE 	IS_USE = 'Y'
+		ORDER BY QUESTION_NUMBER
+	</select>
+	
+	<select id="getSurveyExampleList"  parameterType="String" resultType="com.iscreammedia.clic.front.domain.SurveyDomain">
+		SELECT		/*	UserRepository.getSurveyExampleList   설문조사 문항 조회  */
+			EXAMPLE_ID,
+			EXAMPLE_TITLE_${language.code} AS exampleTitle,
+			EXAMPLE_IMAGE_PATH_${language.code} AS exampleImagePath,
+			CREATED_DATE, 
+			CREATOR, 
+			UPDATED_DATE, 
+			UPDATER,
+			QUESTION_ID, 
+			EXAMPLE_NUMBER		
+		FROM T_SURVEY_EXAMPLE
+		ORDER BY EXAMPLE_NUMBER		
+	</select>
+	
+	
+	<insert id="surveyAnswerInsert" parameterType="com.iscreammedia.clic.front.domain.SurveyDomain">
+		INSERT INTO T_SURVEY_ANSWER   /*	 UserRepository.surveyAnswerInsert   설문답변 저장  */
+		(
+			JOIN_SURVEY_ID,
+			QUESTION_ID,
+			EXAMPLE_ANSWER, 
+			CREATED_DATE, 
+			CREATOR, 
+			UPDATED_DATE,
+			UPDATER			
+		)
+		VALUES
+		(
+			#{joinSurveyId},
+			#{questionId},			
+			#{exampleAnswer},
+			GETDATE(),
+			#{creator},
+			GETDATE(),
+			#{updater}			
+		)
+	</insert>
+	
+	<insert id="surveyJoinHistoryInsert" parameterType="com.iscreammedia.clic.front.domain.SurveyDomain">
+		INSERT INTO T_SURVEY_JOIN_HISTORY   /*	 UserRepository.surveyJoinHistoryInsert   설문 참여이력 저장  */
+		(			
+			USER_ID, 
+			SURVEY_ID, 
+			IS_COMPLETE, 
+			CREATED_DATE, 
+			CREATOR, 
+			UPDATED_DATE,
+			UPDATER 
+		)
+		VALUES
+		(			
+			#{userId},			
+			#{surveyId},
+			#{isComplete},
+			GETDATE(),
+			#{creator},	
+			GETDATE(),
+			#{updater}		
+		)
+		<selectKey resultType="int" keyProperty="joinSurveyId" order="AFTER">
+			SELECT @@IDENTITY
+		</selectKey>
+	</insert>
+	
+	
+	<update id="loginDateUpdate" parameterType="String" >
+		UPDATE T_USER	/*	UserRepository.loginDateUpdate   로그인 시간 업데이트  */
+		SET
+			LAST_LOGIN_DATE = GETDATE()
+		WHERE USER_ID = #{userId}
+	</update>
+	
+	<update id="userTypeUpdate" parameterType="com.iscreammedia.clic.front.domain.UserDomain" >
+		UPDATE T_USER	/*	UserRepository.userTypeUpdate   회원상태값 수정  */
+		SET
+			USER_STATUS_CODE = #{userStatusCode},
+			UPDATED_DATE = GETDATE()
+		WHERE EMAIL = #{email}
+	</update>
+	
+	<delete id="userDelete" parameterType="com.iscreammedia.clic.front.domain.UserDomain">
+		/*	 UserRepository.userDelete   회원 삭제     */
+		DELETE FROM T_USER WHERE USER_ID = #{userId}
+	</delete>
+	
+	<delete id="userEmailDelete"  parameterType="String" >
+		/*	 UserRepository.userEmailDelete   회원 삭제     */
+		DELETE FROM T_USER WHERE EMAIL = #{email}
+	</delete>
+	
+	<update id="userImageUpdate" parameterType="map" >
+		UPDATE T_USER	/*	UserRepository.userImageUpdate   회원 이미지 수정  */
+			SET					
+				USER_IMAGE_PATH	= #{userImagePath}
+		WHERE USER_ID = #{userId}
+	</update>
+	
+	<insert id="accessHistoryInsert" parameterType="map">
+		INSERT INTO T_ACCESS_HISTORY   /*	 UserRepository.accessHistoryInsert   접근이력 등록 */
+		(			
+			USER_ID,
+			<!-- FRONT_MENU_ID, -->
+			FRONT_MENU_URI,
+			MONTH,
+			OS_TYPE,
+			CREATED_DATE
+		)
+		VALUES
+		(
+			#{userId},			
+			<!-- #{frontMenuId}, -->
+			#{frontMenuUri},
+			#{month},
+			#{osType},
+			GETDATE()
+		)
+	</insert>
+	
+	<select id="lastLoginDateCk" parameterType="map" resultType="int">
+		SELECT		/*	UserRepository.lastLoginDateCk  회원 마지막 로그인 날짜 체크  */
+			COUNT(USER_ID)
+		FROM T_USER
+		WHERE USER_ID = #{userId}
+			AND CONVERT(CHAR(10), LAST_LOGIN_DATE, 23) = CONVERT(CHAR(10), GETDATE(), 23)
+	</select>
+	
+	
+	<select id="getLoginHistory" parameterType="String" resultType="com.iscreammedia.clic.front.domain.UserDomain">
+		SELECT		/*	UserRepository.getLoginHistory  로그인 세션조회  */
+			USER_ID, 					
+			SESSION_DATA,
+			CREATED_DATE,
+			DATEDIFF(MINUTE,CREATED_DATE, GETDATE()) AS limitDate
+		FROM T_LOGIN_SESSION			
+		WHERE USER_ID = #{userId}
+	</select>
+	
+	
+	<insert id="loginHistoryInsert" parameterType="map">
+		INSERT INTO T_LOGIN_SESSION   /*	 UserRepository.loginHistoryInsert 로그인 세션 저장  */
+		(			
+			USER_ID,			
+			SESSION_DATA,	
+			USER_TYPE,		
+			CREATED_DATE
+		)
+		VALUES
+		(
+			#{userId},	
+			#{sessionData},
+			'3001',
+			GETDATE()
+		)
+	</insert>
+	
+	<update id="loginHistoryUpdate" parameterType="String" >
+		UPDATE T_LOGIN_SESSION	/*	UserRepository.loginHistoryUpdate  로그인 세션 업데이트 */
+			SET					
+				CREATED_DATE	= GETDATE()
+		WHERE USER_ID = #{userId}
+	</update>
+	
+	
+	<delete id="loginHistoryDelete" parameterType="String">
+		/*	 UserRepository.loginHistoryDelete     로그인 세션 삭제  */
+		DELETE FROM T_LOGIN_SESSION WHERE USER_ID = #{userId}
+	</delete>
+	
+</mapper>

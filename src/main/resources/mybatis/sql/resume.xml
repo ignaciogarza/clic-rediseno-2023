@@ -1,0 +1,641 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iscreammedia.clic.front.repository.ResumeRepository">	
+	
+	<select id="resumeCk" parameterType="String" resultType="int">
+		SELECT		/*	ResumeRepository.resumeCk   Resume registration check  */
+			COUNT(RESUME_ID)
+		FROM T_RESUME
+		WHERE USER_ID = #{userId}
+	</select>
+	
+	<insert id="insertResume" parameterType="com.iscreammedia.clic.front.domain.ResumeDomain">
+		INSERT INTO T_RESUME		/*	ResumeRepository.insertResume   Register your resume
+ */
+			(
+				USER_ID
+				, RESUME_TEMPLATE_CODE
+				, IMAGE_PATH
+				, IS_PICTURE_DISPLAY
+				, IS_YEARMONTHDAY_DISPLAY
+				, IS_SEX_DISPLAY
+				, IS_COUNTRY_DISPLAY
+				, IS_CAREER_DISPLAY
+				, IS_EDUCATION_DISPLAY
+				, IS_ABOUT_ME_DISPLAY
+				, IS_HAVE_SKILL_DISPLAY
+				, IS_PROGRAM_DISPLAY
+				, IS_LANG_DISPLAY
+				, IS_QR_PORTFOLIO_DISPLAY
+				, IS_ADDRESS_DISPLAY
+				, CREATED_DATE
+			)
+		VALUES
+			(
+				#{userId}
+				, '1601'
+				, #{imagePath}
+				, 'Y'
+				, 'Y'
+				, 'Y'
+				, 'Y'
+				, 'N'
+				, 'N'
+				, 'N'
+				, 'N'
+				, 'N'
+				, 'N'
+				, 'N'
+				, 'N'
+				, GETDATE()
+			)
+	</insert>
+	
+	
+	<select id="resumeDetail" parameterType="String" resultType="com.iscreammedia.clic.front.domain.ResumeDomain">
+		SELECT		/*	ResumeRepository.resumeDetail   Resume inquiry  */
+			r.RESUME_ID
+			, r.IMAGE_PATH
+			, r.SELF_INTRODUCTION
+		    , r.RESUME_TEMPLATE_CODE
+		    , r.QR_PORTFOLIO_ID
+		    , r.IS_PICTURE_DISPLAY
+		    , r.IS_YEARMONTHDAY_DISPLAY
+		    , r.IS_COUNTRY_DISPLAY
+		    , r.IS_CAREER_DISPLAY
+		    , r.IS_EDUCATION_DISPLAY
+		    , r.IS_ABOUT_ME_DISPLAY
+		    , r.IS_HAVE_SKILL_DISPLAY
+		    , r.IS_PROGRAM_DISPLAY
+		    , r.IS_LANG_DISPLAY
+		    , r.IS_QR_PORTFOLIO_DISPLAY
+		    , r.IS_ADDRESS_DISPLAY
+		    , r.IS_SEX_DISPLAY
+			, u.USER_ID
+			, u.NAME
+			, u.FIRSTNAME
+			, u.YEAR
+			, FORMAT(u.MONTH, '00') AS MONTH
+			, FORMAT(u.DAY, '00') AS DAY
+			, u.EMAIL
+			, u.EMAIL AS ENCRYPT_EMAIL
+			, u.TELL
+			, j.JOB_NAME_${language.code} AS JOB_NAME
+			, c.NAME_${language.code} AS SEX
+			, ct.COUNTRY_CODE
+			, ct.COUNTRY_NAME_${language.code} AS COUNTRY_NAME
+			, ctt.CITY_NAME_${language.code} AS CITY_NAME
+			, cc.NAME_${language.code}
+			, p.NAME AS portfolioName
+    		, p.PORTFOLIO_ID
+		FROM T_RESUME r
+		JOIN T_USER u ON r.USER_ID = u.USER_ID
+		LEFT JOIN T_JOB_TABLE j ON u.JOB_ID = j.JOB_ID 
+		LEFT JOIN T_COUNTRY_TABLE ct ON u.COUNTRY_CODE = ct.COUNTRY_CODE
+		LEFT JOIN T_CITY_TABLE ctt ON u.CITY_ID = ctt.CITY_ID
+		LEFT JOIN T_CODE c ON CONCAT(c.MAJOR, c.MINOR) = u.SEX_CODE
+		LEFT JOIN T_CODE cc ON CONCAT(cc.MAJOR, cc.MINOR) = r.RESUME_TEMPLATE_CODE
+		LEFT JOIN T_PORTFOLIO p ON r.QR_PORTFOLIO_ID = p.PORTFOLIO_ID
+		WHERE r.USER_ID = #{userId}
+	</select>
+	
+	<update id="updateResumeImg" parameterType="com.iscreammedia.clic.front.domain.ResumeDomain">
+		UPDATE T_RESUME		/*	ResumeRepository.updateResumeImg   Edit your resume profile image */
+			SET
+				IMAGE_PATH = #{imagePath}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_ID = #{resumeId}
+	</update>
+	
+	<update id="updateInfoCk" parameterType="com.iscreammedia.clic.front.domain.ResumeDomain">
+		UPDATE T_RESUME		/*	ResumeRepository.updateInfoCk   Edit Resume Information */
+			SET
+				IS_PICTURE_DISPLAY = #{isPictureDisplay}
+				, IS_YEARMONTHDAY_DISPLAY = #{isYearmonthdayDisplay}
+				, IS_SEX_DISPLAY = #{isSexDisplay}
+				, IS_COUNTRY_DISPLAY = #{isCountryDisplay}
+				, IS_ABOUT_ME_DISPLAY = #{isAboutMeDisplay}
+				, IS_CAREER_DISPLAY = #{isCareerDisplay}
+				, IS_EDUCATION_DISPLAY = #{isEducationDisplay}
+				, IS_HAVE_SKILL_DISPLAY = #{isHaveSkillDisplay}
+				, IS_PROGRAM_DISPLAY = #{isProgramDisplay}
+				, IS_LANG_DISPLAY = #{isLangDisplay}
+				, IS_QR_PORTFOLIO_DISPLAY = #{isQrPortfolioDisplay}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_ID = #{resumeId}
+	</update>
+	
+	<update id="updateTemplateCk" parameterType="com.iscreammedia.clic.front.domain.ResumeDomain">
+		UPDATE T_RESUME		/*	ResumeRepository.updateTemplateCk   Edit your resume template */
+			SET
+				RESUME_TEMPLATE_CODE = #{resumeTemplateCode}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_ID = #{resumeId}
+	</update>
+	
+	<update id="updateInfoCkPopup" parameterType="com.iscreammedia.clic.front.domain.ResumeDomain">
+		UPDATE T_RESUME		/*	ResumeRepository.updateInfoCkPopup   Edit resume information (pop-up) */
+			SET
+				IS_PICTURE_DISPLAY = #{isPictureDisplay}
+				, IS_YEARMONTHDAY_DISPLAY = #{isYearmonthdayDisplay}
+				, IS_COUNTRY_DISPLAY = #{isCountryDisplay}
+				, IS_CAREER_DISPLAY = #{isCareerDisplay}
+				, IS_EDUCATION_DISPLAY = #{isEducationDisplay}
+				, IS_HAVE_SKILL_DISPLAY = #{isHaveSkillDisplay}
+				, IS_PROGRAM_DISPLAY = #{isProgramDisplay}
+				, IS_LANG_DISPLAY = #{isLangDisplay}
+				, IS_QR_PORTFOLIO_DISPLAY = #{isQrPortfolioDisplay}
+				, IS_ABOUT_ME_DISPLAY = #{isAboutMeDisplay}
+				, IS_SEX_DISPLAY = #{isSexDisplay}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_ID = #{resumeId}
+	</update>
+	
+	<select id="selfDetail" parameterType="int" resultType="com.iscreammedia.clic.front.domain.ResumeDomain">
+		SELECT		/* ResumeRepository.selfDetail  Resume self-introduction page */
+			SELF_INTRODUCTION
+		FROM T_RESUME
+		WHERE RESUME_ID = #{resumeId}
+	</select>
+	
+	<update id="updateSelf" parameterType="com.iscreammedia.clic.front.domain.ResumeDomain">
+		UPDATE T_RESUME		/* ResumeRepository.updateSelf  Edit your resume and self-introduction */
+			SET
+				SELF_INTRODUCTION = #{selfIntroduction}
+		WHERE RESUME_ID = #{resumeId}
+	</update>
+	
+	<update id="deleteSelf" parameterType="com.iscreammedia.clic.front.domain.ResumeDomain">
+		UPDATE T_RESUME		/* ResumeRepository.deleteSelf  Delete resume and self-introduction */
+			SET
+				SELF_INTRODUCTION = ''
+		WHERE RESUME_ID = #{resumeId}
+	</update>
+	
+	<select id="selectCareerList" resultType="com.iscreammedia.clic.front.domain.ResumeCareerDomain">
+		SELECT		/*	ResumeRepository.selectCareerList   Inquire about resume and career details  */
+			rcm.RESUME_CAREER_MATTERS_ID
+			, rcm.COMPANY
+			, rcm.POSITION
+			, rcm.IS_WORK
+			, rcm.IS_CAREER_DISPLAY
+			, rcm.JOB_CONTENTS
+			, rcm.JOIN_YEAR
+			, FORMAT(rcm.JOIN_MONTH, '00') AS JOIN_MONTH
+			, rcm.LEAVE_YEAR
+			, FORMAT(rcm.LEAVE_MONTH, '00') AS LEAVE_MONTH
+			, rcm.IS_DELETE
+			, r.RESUME_ID
+		FROM T_RESUME_CAREER_MATTERS rcm
+		JOIN T_RESUME r ON rcm.RESUME_ID = r.RESUME_ID
+		WHERE r.RESUME_ID = #{resumeId}
+		ORDER BY rcm.IS_WORK DESC
+			, rcm.LEAVE_YEAR DESC
+			, rcm.LEAVE_MONTH DESC
+			, rcm.JOIN_YEAR DESC
+			, rcm.JOIN_MONTH DESC
+	</select>
+	
+	<update id="updateIsCareer" parameterType="com.iscreammedia.clic.front.domain.ResumeCareerDomain">
+		UPDATE T_RESUME_CAREER_MATTERS		/*	ResumeRepository.updateIsCareer   Whether your resume includes work experience */
+			SET
+				IS_CAREER_DISPLAY = #{isCareerDisplay}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_CAREER_MATTERS_ID = #{resumeCareerMattersId}
+	</update>
+	
+	<insert id="insertCareer" parameterType="com.iscreammedia.clic.front.domain.ResumeCareerDomain">
+		INSERT INTO T_RESUME_CAREER_MATTERS		/*	ResumeRepository.insertCareer   Register your resume and career details */
+		(
+			COMPANY
+			, POSITION
+			, IS_WORK
+			, IS_CAREER_DISPLAY
+			, JOB_CONTENTS
+			, JOIN_YEAR
+			, JOIN_MONTH
+			, LEAVE_YEAR
+			, LEAVE_MONTH
+			, IS_DELETE
+			, RESUME_ID
+			, CREATED_DATE
+		)
+		VALUES
+		(
+			#{company}
+			, #{position}
+			, #{isWork}
+			, 'N'
+			, #{jobContents}
+			, #{joinYear}
+			, #{joinMonth}
+			, #{leaveYear}
+			, #{leaveMonth}
+			, 'N'
+			, #{resumeId}
+			, GETDATE()
+		)
+	</insert>
+	
+	<select id="careerDetail" parameterType="int" resultType="com.iscreammedia.clic.front.domain.ResumeCareerDomain">
+		SELECT		/*	ResumeRepository.careerDetail   Resume work experience edit page */
+			COMPANY
+			, POSITION
+			, IS_WORK
+			, JOB_CONTENTS
+			, JOIN_YEAR
+			, JOIN_MONTH
+			, LEAVE_YEAR
+			, LEAVE_MONTH
+		FROM T_RESUME_CAREER_MATTERS
+		WHERE RESUME_CAREER_MATTERS_ID = #{resumeCareerMattersId}
+	</select>
+	
+	<update id="updateCareer" parameterType="com.iscreammedia.clic.front.domain.ResumeCareerDomain">
+		UPDATE T_RESUME_CAREER_MATTERS		/*	ResumeRepository.updateCareer   Edit your resume and career details */
+			SET
+				COMPANY = #{company}
+				, POSITION = #{position}
+				, IS_WORK = #{isWork}
+				, JOB_CONTENTS = #{jobContents}
+				, JOIN_YEAR = #{joinYear}
+				, JOIN_MONTH = #{joinMonth}
+				, LEAVE_YEAR = #{leaveYear}
+				, LEAVE_MONTH = #{leaveMonth}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_CAREER_MATTERS_ID = #{resumeCareerMattersId}
+	</update>
+	
+	<update id="deleteCareer" parameterType="com.iscreammedia.clic.front.domain.ResumeCareerDomain">
+		UPDATE T_RESUME_CAREER_MATTERS		/*	ResumeRepository.deleteCareer   Delete resume and career details */
+			SET
+				IS_DELETE = 'Y'
+		WHERE RESUME_CAREER_MATTERS_ID = #{resumeCareerMattersId}
+	</update>
+	
+	<select id="selectEducationList" resultType="com.iscreammedia.clic.front.domain.ResumeEducationDomain">
+		SELECT		/*	ResumeRepository.selectEducationList   Resume training inquiry  */
+			re.RESUME_EDUCATION_ID
+			, re.SCHOOL
+			, re.MAJOR
+			, re.IS_WORK
+			, re.IS_EDUCATION_DISPLAY
+			, re.ADMISSION_YEAR
+			, FORMAT(re.ADMISSION_MONTH, '00') AS ADMISSION_MONTH
+			, re.GRADUATED_YEAR
+			, FORMAT(re.GRADUATED_MONTH, '00') AS GRADUATED_MONTH
+			, re.IS_DELETE
+			, r.RESUME_ID
+		FROM T_RESUME_EDUCATION re
+		JOIN T_RESUME r ON re.RESUME_ID = r.RESUME_ID
+		WHERE r.RESUME_ID = #{resumeId}
+		ORDER BY re.IS_WORK DESC
+			, re.GRADUATED_YEAR DESC
+			, re.GRADUATED_MONTH DESC
+			, re.ADMISSION_YEAR DESC
+			, re.ADMISSION_MONTH DESC
+	</select>
+	
+	<update id="updateIsEducation" parameterType="com.iscreammedia.clic.front.domain.ResumeEducationDomain">
+		UPDATE T_RESUME_EDUCATION		/*	ResumeRepository.updateIsEducation   Whether resume training is included */
+			SET
+				IS_EDUCATION_DISPLAY = #{isEducationDisplay}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_EDUCATION_ID = #{resumeEducationId}
+	</update>
+	
+	<insert id="insertEducation" parameterType="com.iscreammedia.clic.front.domain.ResumeEducationDomain">
+		INSERT INTO T_RESUME_EDUCATION		/*	ResumeRepository.insertEducation   Resume training registration */
+		(
+			SCHOOL
+			, MAJOR
+			, IS_WORK
+			, IS_EDUCATION_DISPLAY
+			, ADMISSION_YEAR
+			, ADMISSION_MONTH
+			, GRADUATED_YEAR
+			, GRADUATED_MONTH
+			, IS_DELETE
+			, RESUME_ID
+			, CREATED_DATE
+		)
+		VALUES
+		(
+			#{school}
+			, #{major}
+			, #{isWork}
+			, 'N'
+			, #{admissionYear}
+			, #{admissionMonth}
+			, #{graduatedYear}
+			, #{graduatedMonth}
+			, 'N'
+			, #{resumeId}
+			, GETDATE()
+		)
+	</insert>
+	
+	<select id="educationDetail" parameterType="int" resultType="com.iscreammedia.clic.front.domain.ResumeEducationDomain">
+		SELECT		/*	ResumeRepository.educationDetail   Resume training edit page */
+			SCHOOL
+			, MAJOR
+			, IS_WORK
+			, ADMISSION_YEAR
+			, ADMISSION_MONTH
+			, GRADUATED_YEAR
+			, GRADUATED_MONTH
+		FROM T_RESUME_EDUCATION
+		WHERE RESUME_EDUCATION_ID = #{resumeEducationId}
+	</select>
+	
+	<update id="updateEducation" parameterType="com.iscreammedia.clic.front.domain.ResumeEducationDomain">
+		UPDATE T_RESUME_EDUCATION		/*	ResumeRepository.updateEducation   Edit Resume Training
+ */
+			SET
+				SCHOOL = #{school}
+				, MAJOR = #{major}
+				, IS_WORK = #{isWork}
+				, ADMISSION_YEAR = #{admissionYear}
+				, ADMISSION_MONTH = #{admissionMonth}
+				, GRADUATED_YEAR = #{graduatedYear}
+				, GRADUATED_MONTH = #{graduatedMonth}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_EDUCATION_ID = #{resumeEducationId}
+	</update>
+	
+	<update id="deleteEducation" parameterType="com.iscreammedia.clic.front.domain.ResumeEducationDomain">
+		UPDATE T_RESUME_EDUCATION		/*	ResumeRepository.deleteEducation   Delete resume training */
+			SET
+				IS_DELETE = 'Y'
+		WHERE RESUME_EDUCATION_ID = #{resumeEducationId}
+	</update>
+	
+	<select id="selectSkillList" resultType="com.iscreammedia.clic.front.domain.ResumeSkillDomain">
+		SELECT		/*	ResumeRepository.selectSkillList   Resume Skill Lookup  */
+			rhs.RESUME_HAVE_SKILL_ID
+			, rhs.SKILL_NAME
+			, rhs.MEASURE_TYPE_CODE
+			, rhs.MEASURE_LEVEL
+			, rhs.IS_DELETE
+			, m.TITLE_${language.code} AS LEVEL_NAME
+		FROM T_RESUME_HAVE_SKILL rhs
+		JOIN T_RESUME r ON rhs.RESUME_ID = r.RESUME_ID
+		JOIN T_MEASURE m ON rhs.MEASURE_TYPE_CODE = m.MEASURE_TYPE_CODE and rhs.MEASURE_LEVEL = m.MEASURE_LEVEL
+		WHERE r.RESUME_ID = #{resumeId}
+		ORDER BY rhs.SKILL_NAME ASC
+	</select>
+	
+	<select id="skillCk" resultType="int" parameterType="com.iscreammedia.clic.front.domain.ResumeSkillDomain">
+		SELECT		/*	ResumeRepository.skillCk   Resume skill limit check  */
+			COUNT(RESUME_HAVE_SKILL_ID)
+		FROM T_RESUME_HAVE_SKILL
+		WHERE RESUME_ID = #{resumeId}
+			AND IS_DELETE = 'N'
+	</select>
+	
+	<insert id="insertSkill" parameterType="com.iscreammedia.clic.front.domain.ResumeSkillDomain">
+		INSERT INTO T_RESUME_HAVE_SKILL		/*	ResumeRepository.insertSkill  Resume Skill Registration */
+		(
+			SKILL_NAME
+			, MEASURE_TYPE_CODE
+			, MEASURE_LEVEL
+			, IS_DELETE
+			, RESUME_ID
+			, CREATED_DATE
+		)
+		VALUES
+		(
+			#{skillName}
+			, #{measureTypeCode}
+			, #{measureLevel}
+			, 'N'
+			, #{resumeId}
+			, GETDATE()
+		)
+	</insert>
+	
+	<select id="skillDetail" parameterType="int" resultType="com.iscreammedia.clic.front.domain.ResumeSkillDomain">
+		SELECT		/*	ResumeRepository.skillDetail   Resume Skills Edit Page */
+			SKILL_NAME
+			, MEASURE_TYPE_CODE
+			, MEASURE_LEVEL
+		FROM T_RESUME_HAVE_SKILL
+		WHERE RESUME_HAVE_SKILL_ID = #{resumeHaveSkillId}
+	</select>
+	
+	<update id="updateSkill" parameterType="com.iscreammedia.clic.front.domain.ResumeSkillDomain">
+		UPDATE T_RESUME_HAVE_SKILL		/*	ResumeRepository.updateSkill   Edit resume skills */
+			SET
+				SKILL_NAME = #{skillName}
+				, MEASURE_TYPE_CODE = #{measureTypeCode}
+				, MEASURE_LEVEL = #{measureLevel}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_HAVE_SKILL_ID = #{resumeHaveSkillId}
+	</update>
+	
+	<update id="deleteSkill" parameterType="com.iscreammedia.clic.front.domain.ResumeSkillDomain">
+		UPDATE T_RESUME_HAVE_SKILL		/*	ResumeRepository.deleteSkill   Delete resume skills */
+			SET
+				IS_DELETE = 'Y'
+		WHERE RESUME_HAVE_SKILL_ID = #{resumeHaveSkillId}
+	</update>
+	
+	<select id="selectProgramList" resultType="com.iscreammedia.clic.front.domain.ResumeProgramDomain">
+		SELECT		/*	ResumeRepository.selectProgramList   Resume program inquiry  */
+			rp.RESUME_PROGRAM_ID
+			, rp.PROGRAM
+			, rp.PROGRAMING_ID
+			, rp.MEASURE_TYPE_CODE
+			, rp.MEASURE_LEVEL
+			, rp.IS_DELETE
+			, pt.PROGRAMING_NAME_${language.code} AS PROGRAMING_NAME
+			, m.TITLE_${language.code} AS LEVEL_NAME
+		FROM T_RESUME_PROGRAM rp
+		JOIN T_RESUME r ON rp.RESUME_ID = r.RESUME_ID
+		JOIN T_PROGRAMING_TABLE pt ON rp.PROGRAMING_ID = pt.PROGRAMING_ID
+		JOIN T_MEASURE m ON rp.MEASURE_TYPE_CODE = m.MEASURE_TYPE_CODE and rp.MEASURE_LEVEL = m.MEASURE_LEVEL
+		WHERE r.RESUME_ID = #{resumeId}
+		ORDER BY PROGRAMING_NAME ASC, rp.PROGRAM ASC
+	</select>
+	
+	<select id="programCk" resultType="int" parameterType="com.iscreammedia.clic.front.domain.ResumeProgramDomain">
+		SELECT		/*	ResumeRepository.programCk   Resume Program Duplicate Check  */
+			COUNT(RESUME_PROGRAM_ID)
+		FROM T_RESUME_PROGRAM
+		WHERE RESUME_ID = #{resumeId}
+			AND (PROGRAMING_ID = #{programingId} AND IS_DELETE = 'N')
+			AND (PROGRAM = #{program} AND IS_DELETE = 'N')
+	</select>
+	
+	<insert id="insertProgram" parameterType="com.iscreammedia.clic.front.domain.ResumeProgramDomain">
+		INSERT INTO T_RESUME_PROGRAM		/*	ResumeRepository.insertProgram   Register for the resume program */
+		(
+			PROGRAM
+			, PROGRAMING_ID
+			, MEASURE_TYPE_CODE
+			, MEASURE_LEVEL
+			, IS_DELETE
+			, RESUME_ID
+			, CREATED_DATE
+		)
+		VALUES
+		(
+			#{program}
+			, #{programingId}
+			, #{measureTypeCode}
+			, #{measureLevel}
+			, 'N'
+			, #{resumeId}
+			, GETDATE()
+		)
+	</insert>
+	
+	<select id="programDetail" parameterType="int" resultType="com.iscreammedia.clic.front.domain.ResumeProgramDomain">
+		SELECT		/*	ResumeRepository.programDetail  Resume program edit page */
+			rp.PROGRAM
+			, rp.PROGRAMING_ID
+			, rp.MEASURE_TYPE_CODE
+			, rp.MEASURE_LEVEL
+			, rp.IS_DELETE
+			, pt.PROGRAMING_NAME_${language.code} AS PROGRAMING_NAME
+		FROM T_RESUME_PROGRAM rp
+		JOIN T_PROGRAMING_TABLE pt ON rp.PROGRAMING_ID = pt.PROGRAMING_ID
+		WHERE RESUME_PROGRAM_ID = #{resumeProgramId}
+	</select>
+	
+	<update id="updateProgram" parameterType="com.iscreammedia.clic.front.domain.ResumeProgramDomain">
+		UPDATE T_RESUME_PROGRAM		/*	ResumeRepository.updateProgram   
+Edit your resume program */
+			SET
+				PROGRAM = #{program}
+				, PROGRAMING_ID = #{programingId}
+				, MEASURE_TYPE_CODE = #{measureTypeCode}
+				, MEASURE_LEVEL = #{measureLevel}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_PROGRAM_ID = #{resumeProgramId}
+	</update>
+	
+	<update id="deleteProgram" parameterType="com.iscreammedia.clic.front.domain.ResumeProgramDomain">
+		UPDATE T_RESUME_PROGRAM		/*	ResumeRepository.deleteProgram   Delete Resume Program */
+			SET
+				IS_DELETE = 'Y'
+		WHERE RESUME_PROGRAM_ID = #{resumeProgramId}
+	</update>
+	
+	<select id="selectLangList" resultType="com.iscreammedia.clic.front.domain.ResumeLangDomain">
+		SELECT		/*	ResumeRepository.selectLangList   Resume Language Lookup  */
+			rl.RESUME_LANG_ID
+			, rl.LANG AS LANG_TITLE
+			, rl.LANG_ID
+			, rl.MEASURE_TYPE_CODE
+			, rl.MEASURE_LEVEL
+			, rl.IS_DELETE
+			, lt.LANG_NAME_${language.code} AS LANG_NAME
+			, m.TITLE_${language.code} AS LEVEL_NAME
+		FROM T_RESUME_LANG rl
+		JOIN T_RESUME r ON rl.RESUME_ID = r.RESUME_ID
+		JOIN T_LANG_TABLE lt ON rl.LANG_ID = lt.LANG_ID
+		JOIN T_MEASURE m ON rl.MEASURE_TYPE_CODE = m.MEASURE_TYPE_CODE and rl.MEASURE_LEVEL = m.MEASURE_LEVEL
+		WHERE r.RESUME_ID = #{resumeId}
+		ORDER BY LANG_NAME ASC, rl.LANG ASC
+	</select>
+	
+	<select id="langCk" resultType="int" parameterType="com.iscreammedia.clic.front.domain.ResumeLangDomain">
+		SELECT		/*	ResumeRepository.langCk   Resume Language Duplicate Check */
+			COUNT(RESUME_LANG_ID)
+		FROM T_RESUME_LANG
+		WHERE RESUME_ID = #{resumeId}
+			AND (LANG_ID = #{langId} AND IS_DELETE = 'N')
+			AND (LANG = #{langTitle} AND IS_DELETE = 'N')
+	</select>
+	
+	<insert id="insertLang" parameterType="com.iscreammedia.clic.front.domain.ResumeLangDomain">
+		INSERT INTO T_RESUME_LANG		/*	ResumeRepository.insertLang   Register your resume language */
+		(
+			LANG
+			, LANG_ID
+			, MEASURE_TYPE_CODE
+			, MEASURE_LEVEL
+			, IS_DELETE
+			, RESUME_ID
+			, CREATED_DATE
+		)
+		VALUES
+		(
+			#{langTitle}
+			, #{langId}
+			, #{measureTypeCode}
+			, #{measureLevel}
+			, 'N'
+			, #{resumeId}
+			, GETDATE()
+		)
+	</insert>
+	
+	<select id="langDetail" parameterType="int" resultType="com.iscreammedia.clic.front.domain.ResumeLangDomain">
+		SELECT		/*	ResumeRepository.langDetail   Resume language edit page */
+			rl.LANG AS LANG_TITLE
+			, rl.LANG_ID
+			, rl.MEASURE_TYPE_CODE
+			, rl.MEASURE_LEVEL
+			, lt.LANG_NAME_${language.code} AS LANG_NAME
+		FROM T_RESUME_LANG rl
+		JOIN T_LANG_TABLE lt ON rl.LANG_ID = lt.LANG_ID
+		WHERE RESUME_LANG_ID = #{resumeLangId}
+	</select>
+	
+	<update id="updateLang" parameterType="com.iscreammedia.clic.front.domain.ResumeLangDomain">
+		UPDATE T_RESUME_LANG		/*	ResumeRepository.updateLang   Edit resume language */
+			SET
+				LANG = #{langTitle}
+				, LANG_ID = #{langId}
+				, MEASURE_TYPE_CODE = #{measureTypeCode}
+				, MEASURE_LEVEL = #{measureLevel}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_LANG_ID = #{resumeLangId}
+	</update>
+	
+	<update id="deleteLang" parameterType="com.iscreammedia.clic.front.domain.ResumeLangDomain">
+		UPDATE T_RESUME_LANG		/*	ResumeRepository.deleteLang   Delete resume language */
+			SET
+				IS_DELETE = 'Y'
+		WHERE RESUME_LANG_ID = #{resumeLangId}
+	</update>
+	
+	<select id="selectPortfolioList" resultType="com.iscreammedia.clic.front.domain.PortfolioDomain">
+		SELECT		/*	ResumeRepository.selectPortfolioList   View resume portfolio */
+			p.PORTFOLIO_ID
+			, p.NAME
+		FROM T_PORTFOLIO p
+		JOIN T_USER u ON u.USER_ID = p.USER_ID
+		WHERE p.USER_ID = #{userId}
+			AND p.IS_DELETE = 'N'
+			AND p.IS_USE_QR = 'Y'
+		ORDER BY p.UPDATED_DATE DESC
+	</select>
+	
+	<update id="updatePortfolio" parameterType="com.iscreammedia.clic.front.domain.ResumeDomain">
+		UPDATE T_RESUME		/*	ResumeRepository.updatePortfolio   Edit your resume portfolio */
+			SET
+				QR_PORTFOLIO_ID = #{qrPortfolioId}
+				, UPDATED_DATE = GETDATE()
+		WHERE RESUME_ID = #{resumeId}
+	</update>
+	
+	<select id="portfolioCk" resultType="int" parameterType="map">
+		SELECT		/*	ResumeRepository.portfolioCk   Resume Portfolio Duplicate Check */
+			COUNT(RESUME_ID)
+		FROM T_RESUME
+		WHERE USER_ID = #{userId}
+			AND QR_PORTFOLIO_ID = #{portfolioId}
+	</select>
+	
+	<update id="deletePortfolio" parameterType="String">
+		UPDATE T_RESUME		/*	ResumeRepository.deletePortfolio   Delete resume portfolio */
+			SET
+				QR_PORTFOLIO_ID = ''
+				, UPDATED_DATE = GETDATE()
+		WHERE USER_ID = #{userId}
+	</update>
+	
+</mapper>

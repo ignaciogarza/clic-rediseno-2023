@@ -1,0 +1,1626 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iscreammedia.clic.front.repository.EvaluationRepository">
+
+	<select id="getSkillName" parameterType="map" resultType="string">
+		/* evaluation.getSkillName : 스킬명 조회 */
+		SELECT
+			S.SKILL_NAME_${language.code} AS SKILL_NAME
+		FROM
+			T_SKILL S
+		WHERE
+			S.SKILL_CODE = #{skillCode}
+		AND S.EXAM_CLASS_CODE = #{examClassCode}
+	</select>
+
+	<select id="getSkillBadgeObtainLevelCode" parameterType="map" resultType="string">
+		/* evaluation.getSkillBadgeObtainLevelCode : 스킬 뱃지 획득 레벨 코드 조회 */
+		SELECT
+			BADGE_OBTAIN_LEVEL_CODE
+		FROM
+			T_SKILL
+		WHERE
+			SKILL_CODE = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+	</select>
+
+	<select id="checkSkillBadgeObtain" parameterType="map" resultType="boolean">
+		/* evaluation.checkSkillBadgeObtain : 스킬 뱃지 획득 확인 */
+		SELECT
+			count(*)
+		FROM
+			T_SKILL S
+		JOIN
+			T_HAVE_SKILL HS
+				ON  HS.SKILL_CODE = S.SKILL_CODE
+				AND HS.EXAM_CLASS_CODE = S.EXAM_CLASS_CODE
+				AND HS.USER_ID = #{userId}
+				AND HS.SKILL_PROGRESS_LEVEL_CODE = '1205'
+		WHERE
+			S.SKILL_CODE = #{skillCode}
+		AND S.EXAM_CLASS_CODE = #{examClassCode}
+	</select>
+
+	<select id="getSkillList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.Skill">
+		/* evaluation.getSkillList : 스킬 목록 조회 */
+		SELECT
+		<include refid="columnSkill"/>
+		<include refid="fromSkill"/>
+		ORDER BY S.SKILL_NAME_${language.code} ASC, S.EXAM_CLASS_CODE ASC
+	</select>
+
+	<select id="getSkill" parameterType="map" resultType="com.iscreammedia.clic.front.domain.Skill">
+		/* evaluation.getSkill : 스킬 상세 조회 */
+		SELECT
+		<include refid="columnSkill"/>
+		<include refid="fromSkill"/>
+		WHERE
+			S.SKILL_CODE = #{skillCode}
+		AND S.EXAM_CLASS_CODE = #{examClassCode}
+	</select>
+
+	<sql id="columnSkill">
+		S.SKILL_CODE
+		,S.EXAM_CLASS_CODE
+		,S.SKILL_NAME_${language.code}     AS SKILL_NAME
+		,S.SKILL_CONTENTS_${language.code} AS SKILL_CONTENTS
+		,S.SKILL_IMAGE_PATH
+		,S.IS_USE
+		,S.BADGE_OBTAIN_LEVEL_CODE
+		,S.MIN_RECOMMEND_FRIEND_COUNT
+		,ISNULL(HS.SKILL_PROGRESS_LEVEL_CODE, '1201') AS SKILL_PROGRESS_LEVEL_CODE
+		,ISNULL(SPS.EXAM_PROGRESS_STATUS_CODE, '1401') AS EXAM_PROGRESS_STATUS_CODE
+		,CASE
+			WHEN ISNULL(HS.SKILL_PROGRESS_LEVEL_CODE, '1201') = '1201' THEN 'NOT_TESTED'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1205'                 THEN 'PASS'
+			/* SELF_EXAM */
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1202' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1401' THEN 'SELF_EXAM_WAIT'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1202' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1402' THEN 'SELF_EXAM_TAKING'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1202' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1403' THEN 'SELF_EXAM_TIME_OUT'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1202' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1404' THEN 'SELF_EXAM_FAILED'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1202' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1405' THEN 'SELF_EXAM_PASS'
+			/* SKILL_EXAM */
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1203' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1401' THEN 'SKILL_EXAM_WAIT'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1203' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1402' THEN 'SKILL_EXAM_TAKING'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1203' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1403' THEN 'SKILL_EXAM_TIME_OUT'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1203' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1404' THEN 'SKILL_EXAM_FAILED'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1203' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1405' THEN 'SKILL_EXAM_PASS'
+			/* FRIEND_AUTH */
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1204' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1401' THEN 'FRIEND_AUTH_WAIT'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1204' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1402' THEN 'FRIEND_AUTH_TAKING'
+			WHEN HS.SKILL_PROGRESS_LEVEL_CODE = '1204' AND SPS.EXAM_PROGRESS_STATUS_CODE = '1405' THEN 'FRIEND_AUTH_PASS'
+		END AS PROGRESS_STATUS_CODE
+		,B.BADGE_ID
+		,B.BADGE_NAME_${language.code}                 AS BADGE_NAME
+		,B.BADGE_DEFAULT_IMAGE_PATH_${language.code}   AS BADGE_DEFAULT_IMAGE_PATH
+		,B.BADGE_OBTAIN_IMAGE_PATH_${language.code}    AS BADGE_OBTAIN_IMAGE_PATH
+		,B.BADGE_CONTENTS_${language.code}             AS BADGE_CONTENTS
+	</sql>
+
+	<sql id="fromSkill">
+		FROM
+			T_SKILL S
+		/* 시험 진행 상태 */
+		LEFT JOIN
+			T_SKILL_PROGRESS_STATUS SPS
+				ON	SPS.SKILL_CODE = S.SKILL_CODE
+				AND SPS.EXAM_CLASS_CODE = S.EXAM_CLASS_CODE
+				AND SPS.USER_ID = #{userId}
+		/* 보유 스킬 */
+		LEFT JOIN
+			T_HAVE_SKILL HS
+				ON	HS.SKILL_CODE = S.SKILL_CODE
+				AND HS.EXAM_CLASS_CODE = S.EXAM_CLASS_CODE
+				AND HS.USER_ID = SPS.USER_ID
+		/* 뱃지 */
+		LEFT JOIN
+			T_BADGE B
+				ON B.BADGE_ID = S.BADGE_ID
+	</sql>
+
+	<select id="getSelfExam" parameterType="map" resultType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.getSelfExam : 자가 시험 조회 */
+		SELECT
+		<include refid="columnExam"/>
+			,SE.SELF_EXAM_ID AS EXAM_ID
+		FROM
+			T_SELF_EXAM SE
+		/* 자가 시험 진행 상태 */
+		LEFT JOIN
+			T_SELF_EXAM_PROGRESS_STATUS SEPS
+				ON	SEPS.SELF_EXAM_ID = SE.SELF_EXAM_ID
+				AND SEPS.USER_ID = #{userId}
+		/* 보유 스킬 */
+		LEFT JOIN
+			T_HAVE_SKILL HS
+				ON	HS.SKILL_CODE = SE.SKILL_CODE
+				AND HS.EXAM_CLASS_CODE = SE.EXAM_CLASS_CODE
+				AND HS.USER_ID = SEPS.USER_ID
+		WHERE
+			SE.SKILL_CODE = #{skillCode}
+		AND SE.EXAM_CLASS_CODE = #{examClassCode}
+	</select>
+
+	<select id="getSkillExam" parameterType="map" resultType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.getSkillExam : 기술 시험 조회 */
+		SELECT
+		<include refid="columnExam"/>
+			,SE.SKILL_EXAM_ID AS EXAM_ID
+		FROM
+			T_SKILL_EXAM SE
+		/* 기술 시험 진행 상태 */
+		LEFT JOIN
+			T_SKILL_EXAM_PROGRESS_STATUS SEPS
+				ON	SEPS.SKILL_EXAM_ID = SE.SKILL_EXAM_ID
+				AND SEPS.USER_ID = #{userId}
+		/* 보유 스킬 */
+		LEFT JOIN
+			T_HAVE_SKILL HS
+				ON	HS.SKILL_CODE = SE.SKILL_CODE
+				AND HS.EXAM_CLASS_CODE = SE.EXAM_CLASS_CODE
+				AND HS.USER_ID = SEPS.USER_ID
+		WHERE
+			SE.SKILL_CODE = #{skillCode}
+		AND SE.EXAM_CLASS_CODE = #{examClassCode}
+	</select>
+
+	<sql id="columnExam">
+		SE.SKILL_CODE
+		,SE.EXAM_CLASS_CODE
+		,SE.EXAM_TITLE_${language.code} AS EXAM_TITLE
+		,SE.EXAM_CONTENTS_${language.code} AS EXAM_CONTENTS
+		,SE.LIMIT_TIME
+		,SE.TOTAL_QUESTION_COUNT
+		,SE.PASS_CRITERIA
+	</sql>
+
+	<select id="confirmSkillProgressStatus" parameterType="map" resultType="string">
+		/* evaluation.confirmSkillProgressStatus : 스킬 진행 상태 확인 */
+		SELECT
+			S.SKILL_CODE
+		FROM
+			T_SKILL S
+		/* 보유 스킬 */
+		JOIN
+			T_HAVE_SKILL HS
+				ON	HS.SKILL_CODE = S.SKILL_CODE
+				AND HS.EXAM_CLASS_CODE = S.EXAM_CLASS_CODE
+				AND HS.USER_ID = #{userId}
+		/* 시험 진행 상태 */
+		JOIN
+			T_SKILL_PROGRESS_STATUS SPS
+				ON	SPS.SKILL_CODE = S.SKILL_CODE
+				AND SPS.EXAM_CLASS_CODE = S.EXAM_CLASS_CODE
+				AND SPS.USER_ID = HS.USER_ID
+		WHERE
+			S.SKILL_CODE = #{skillCode}
+		AND S.EXAM_CLASS_CODE = #{examClassCode}
+		AND (
+			(
+				HS.SKILL_PROGRESS_LEVEL_CODE = #{currCode.skillProgressLevelCode}
+				AND SPS.EXAM_PROGRESS_STATUS_CODE = #{currCode.examProgressStatusCode}
+			)
+			OR (
+				HS.SKILL_PROGRESS_LEVEL_CODE = #{updateCode.skillProgressLevelCode}
+				AND SPS.EXAM_PROGRESS_STATUS_CODE = #{updateCode.examProgressStatusCode}
+			)
+		)
+	</select>
+
+	<insert id="insertSkillProgressStatus" parameterType="com.iscreammedia.clic.front.domain.SkillProgressStatus">
+		/* evaluation.insertSkillProgressStatus : 스킬 진행 상태 등록/수정 */
+		MERGE INTO T_SKILL_PROGRESS_STATUS AS SPS
+		USING (
+			SELECT
+				S.SKILL_CODE
+				,S.EXAM_CLASS_CODE
+				,#{userId} AS USER_ID
+				,SE1.SELF_EXAM_ID
+				,SE2.SKILL_EXAM_ID
+				,#{examProgressStatusCode} AS EXAM_PROGRESS_STATUS_CODE
+			FROM
+				T_SKILL S
+			LEFT JOIN
+				T_SELF_EXAM SE1
+					ON  SE1.SKILL_CODE = S.SKILL_CODE
+					AND SE1.EXAM_CLASS_CODE = S.EXAM_CLASS_CODE
+			LEFT JOIN
+				T_SKILL_EXAM SE2
+					ON  SE2.SKILL_CODE = S.SKILL_CODE
+					AND SE2.EXAM_CLASS_CODE = S.EXAM_CLASS_CODE
+			WHERE
+				S.SKILL_CODE = #{skillCode}
+			AND S.EXAM_CLASS_CODE = #{examClassCode}
+		) AS T
+			ON  SPS.SKILL_CODE = T.SKILL_CODE
+			AND SPS.EXAM_CLASS_CODE = T.EXAM_CLASS_CODE
+			AND SPS.USER_ID = T.USER_ID
+		WHEN MATCHED THEN
+			UPDATE
+			SET
+				SPS.SELF_EXAM_ID               = T.SELF_EXAM_ID
+				,SPS.SKILL_EXAM_ID             = T.SKILL_EXAM_ID
+				,SPS.EXAM_PROGRESS_STATUS_CODE = T.EXAM_PROGRESS_STATUS_CODE
+				,SPS.UPDATED_DATE              = GETDATE()
+		WHEN NOT MATCHED THEN
+			INSERT (SKILL_CODE, EXAM_CLASS_CODE, USER_ID, SELF_EXAM_ID, SKILL_EXAM_ID, EXAM_PROGRESS_STATUS_CODE, CREATED_DATE)
+			VALUES (T.SKILL_CODE, T.EXAM_CLASS_CODE, T.USER_ID, T.SELF_EXAM_ID, T.SKILL_EXAM_ID, T.EXAM_PROGRESS_STATUS_CODE, GETDATE())
+		;
+	</insert>
+
+	<insert id="insertSelfExamProgressStatus" parameterType="com.iscreammedia.clic.front.domain.ExamProgressStatus">
+		/* evaluation.insertSelfExamProgressStatus : 자가 시험 진행 상태 등록/수정 */
+		MERGE INTO T_SELF_EXAM_PROGRESS_STATUS AS SEPS
+		USING (
+			SELECT
+				SELF_EXAM_ID
+				,#{userId} AS USER_ID
+				,#{examProgressStatusCode} AS EXAM_PROGRESS_STATUS_CODE
+				,'N' AS IS_COMPLETE
+			FROM
+				T_SELF_EXAM
+			WHERE
+				SKILL_CODE = #{skillCode}
+			AND EXAM_CLASS_CODE = #{examClassCode}
+		) AS T
+			ON  SEPS.SELF_EXAM_ID = T.SELF_EXAM_ID
+			AND SEPS.USER_ID = T.USER_ID
+		WHEN MATCHED THEN
+			UPDATE
+			SET
+				SEPS.EXAM_PROGRESS_STATUS_CODE = T.EXAM_PROGRESS_STATUS_CODE
+		<choose>
+			<when test="examProgressStatusCode == '1404'.toString() || examProgressStatusCode == '1405'.toString()">
+				,SEPS.IS_COMPLETE = 'Y'
+			</when>
+			<otherwise>
+				,SEPS.IS_COMPLETE = 'N'
+			</otherwise>
+		</choose>
+				,SEPS.UPDATED_DATE = GETDATE()
+		WHEN NOT MATCHED THEN
+			INSERT (SELF_EXAM_ID, USER_ID, EXAM_PROGRESS_STATUS_CODE, IS_COMPLETE, CREATED_DATE)
+			VALUES (T.SELF_EXAM_ID, T.USER_ID, T.EXAM_PROGRESS_STATUS_CODE, T.IS_COMPLETE, GETDATE())
+		;
+		<selectKey resultType="int" keyProperty="examProgressId" order="AFTER">
+			SELECT
+				SEPS.SELF_EXAM_PROGRESS_ID
+			FROM
+				T_SELF_EXAM_PROGRESS_STATUS SEPS
+			JOIN
+				T_SELF_EXAM SE
+					ON  SE.SELF_EXAM_ID = SEPS.SELF_EXAM_ID
+					AND SE.SKILL_CODE = #{skillCode}
+					AND SE.EXAM_CLASS_CODE = #{examClassCode}
+			WHERE
+				SEPS.USER_ID = #{userId}
+		</selectKey>
+	</insert>
+
+	<update id="updateSelfExamStartTime" parameterType="int">
+		/* evaluation.updateSelfExamStartTime : 자가 시험 시작 시간 수정 */
+		UPDATE
+			T_SELF_EXAM_PROGRESS_STATUS
+		SET
+			EXAM_START_TIME = GETDATE()
+			,EXAM_LIMIT_TIME = DATEADD(MINUTE, SE.LIMIT_TIME, GETDATE())
+		FROM
+			T_SELF_EXAM_PROGRESS_STATUS SEPS
+		JOIN
+			T_SELF_EXAM SE
+				ON SE.SELF_EXAM_ID = SEPS.SELF_EXAM_ID
+		WHERE
+			SEPS.SELF_EXAM_PROGRESS_ID = #{value}
+	</update>
+
+	<insert id="insertSkillExamProgressStatus" parameterType="com.iscreammedia.clic.front.domain.ExamProgressStatus">
+		/* evaluation.insertSkillExamProgressStatus : 기술 시험 진행 상태 등록/수정 */
+		MERGE INTO T_SKILL_EXAM_PROGRESS_STATUS AS SEPS
+		USING (
+			SELECT
+				SKILL_EXAM_ID
+				,#{userId} AS USER_ID
+				,#{examProgressStatusCode} AS EXAM_PROGRESS_STATUS_CODE
+				,'N' AS IS_COMPLETE
+			FROM
+				T_SKILL_EXAM
+			WHERE
+				SKILL_CODE = #{skillCode}
+			AND EXAM_CLASS_CODE = #{examClassCode}
+		) AS T
+			ON  SEPS.SKILL_EXAM_ID = T.SKILL_EXAM_ID
+			AND SEPS.USER_ID = T.USER_ID
+		WHEN MATCHED THEN
+			UPDATE
+			SET
+				SEPS.EXAM_PROGRESS_STATUS_CODE = T.EXAM_PROGRESS_STATUS_CODE
+		<choose>
+			<when test="examProgressStatusCode == '1404'.toString() || examProgressStatusCode == '1405'.toString()">
+				,SEPS.IS_COMPLETE = 'Y'
+			</when>
+			<otherwise>
+				,SEPS.IS_COMPLETE = 'N'
+			</otherwise>
+		</choose>
+				,SEPS.UPDATED_DATE = GETDATE()
+		WHEN NOT MATCHED THEN
+			INSERT (SKILL_EXAM_ID, USER_ID, EXAM_PROGRESS_STATUS_CODE, IS_COMPLETE, CREATED_DATE)
+			VALUES (T.SKILL_EXAM_ID, T.USER_ID, T.EXAM_PROGRESS_STATUS_CODE, T.IS_COMPLETE, GETDATE())
+		;
+		<selectKey resultType="int" keyProperty="examProgressId" order="AFTER">
+			SELECT
+				SEPS.SKILL_EXAM_PROGRESS_ID
+			FROM
+				T_SKILL_EXAM_PROGRESS_STATUS SEPS
+			JOIN
+				T_SKILL_EXAM SE
+					ON  SE.SKILL_EXAM_ID = SEPS.SKILL_EXAM_ID
+					AND SE.SKILL_CODE = #{skillCode}
+					AND SE.EXAM_CLASS_CODE = #{examClassCode}
+			WHERE
+				SEPS.USER_ID = #{userId}
+		</selectKey>
+	</insert>
+
+	<update id="updateSkillExamStartTime" parameterType="int">
+		/* evaluation.updateSkillExamStartTime : 기술 시험 시작 시간 수정 */
+		UPDATE
+			T_SKILL_EXAM_PROGRESS_STATUS
+		SET
+			EXAM_START_TIME = GETDATE()
+			,EXAM_LIMIT_TIME = DATEADD(MINUTE, SE.LIMIT_TIME, GETDATE())
+		FROM
+			T_SKILL_EXAM_PROGRESS_STATUS SEPS
+		JOIN
+			T_SKILL_EXAM SE
+				ON SE.SKILL_EXAM_ID = SEPS.SKILL_EXAM_ID
+		WHERE
+			SEPS.SKILL_EXAM_PROGRESS_ID = #{value}
+	</update>
+
+	<insert id="insertHaveSkill" parameterType="com.iscreammedia.clic.front.domain.HaveSkill">
+		/* evaluation.insertHaveSkill : 보유 스킬 등록/수정 */
+		MERGE INTO T_HAVE_SKILL AS HS
+		USING (
+			SELECT
+				#{skillCode} AS SKILL_CODE
+				,#{examClassCode} AS EXAM_CLASS_CODE
+				,#{userId} AS USER_ID
+				,#{skillProgressLevelCode} AS SKILL_PROGRESS_LEVEL_CODE
+		) AS T
+			ON  HS.SKILL_CODE = T.SKILL_CODE
+			AND HS.EXAM_CLASS_CODE = T.EXAM_CLASS_CODE
+			AND HS.USER_ID = T.USER_ID
+		WHEN MATCHED THEN
+			UPDATE
+			SET
+				HS.SKILL_PROGRESS_LEVEL_CODE = T.SKILL_PROGRESS_LEVEL_CODE
+				,HS.UPDATED_DATE             = GETDATE()
+		WHEN NOT MATCHED THEN
+				INSERT (SKILL_CODE, EXAM_CLASS_CODE, USER_ID, SKILL_PROGRESS_LEVEL_CODE, CREATED_DATE)
+				VALUES (T.SKILL_CODE, T.EXAM_CLASS_CODE, T.USER_ID, T.SKILL_PROGRESS_LEVEL_CODE, GETDATE())
+		;
+	</insert>
+
+
+	<select id="confirmSelfExamQuestion" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamQuestionCnt">
+		/* evaluation.confirmSelfExamQuestion : 자가 시험 문항 존재 확인 */
+		SELECT
+			SEPS.SELF_EXAM_PROGRESS_ID AS EXAM_PROGRESS_ID
+			,COUNT(*) AS QUESTION_CNT
+		<include refid="fromSelfExamQuestion"/>
+		GROUP BY SEPS.SELF_EXAM_PROGRESS_ID
+	</select>
+
+	<select id="getSelfExamQuestion" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamQuestion">
+		/* evaluation.getSelfExamQuestion : 자가 시험 문항 조회 */
+		SELECT
+		<include refid="columnExamQuestion"/>
+			,PSEQ.SELF_EXAM_PROGRESS_ID AS EXAM_PROGRESS_ID
+		<include refid="fromSelfExamQuestion"/>
+		WHERE
+			PSEQ.DISPLAY_SEQUENCE = #{no}
+	</select>
+
+	<update id="updateSelfExamQuestionComplete" parameterType="map">
+		/* evaluation.updateSelfExamQuestionComplete : 자가 시험 문항 진행 완료 처리 */
+		UPDATE
+			T_PROGRESS_SELF_EXAM_QUESTION
+		SET
+			IS_PROGRESS = 'Y'
+		WHERE
+			QUESTION_ID           = #{questionId}
+		AND SELF_EXAM_PROGRESS_ID = #{examProgressId}
+	</update>
+
+	<select id="getSelfExamAnswer" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamAnswer">
+		/* evaluation.getSelfExamAnswer : 자가 시험 문항 답변 조회 */
+		SELECT
+			QUESTION_ID
+			,SELF_EXAM_PROGRESS_ID AS EXAM_PROGRESS_ID
+			,SHORT_ANSWER
+			,EXAMPLE_ANSWER_1
+			,EXAMPLE_ANSWER_2
+			,EXAMPLE_ANSWER_3
+			,EXAMPLE_ANSWER_4
+			,EXAMPLE_ANSWER_5
+		FROM
+			T_PROGRESS_SELF_EXAM_ANSWER
+		WHERE
+			QUESTION_ID           = #{questionId}
+		AND SELF_EXAM_PROGRESS_ID = #{examProgressId}
+	</select>
+
+	<select id="getSelfExamExampleList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamExample">
+		/* evaluation.getSelfExamExampleList : 자가 시험 보기 조회 */
+		SELECT
+			QUESTION_ID
+			,EXAMPLE_NUMBER
+			,EXAMPLE_CONTENTS_${language.code}    AS EXAMPLE_CONTENTS
+			,EXAMPLE_IMAGE_PATH_${language.code}  AS EXAMPLE_IMAGE_PATH
+			,IS_ANSWER
+			,LINE_DRAWING_ANSWER_NUMBER
+		FROM
+			T_SELF_EXAM_EXAMPLE
+		WHERE
+			QUESTION_ID = #{questionId}
+		ORDER BY EXAMPLE_NUMBER ASC
+	</select>
+
+	<select id="getSelfExamExampleList2" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamExample">
+		/* evaluation.getSelfExamExampleList2 : 자가 시험 선긋기 왼쪽 보기 조회 */
+		SELECT
+			QUESTION_ID
+			,EXAMPLE_ID                           AS EXAMPLE_NUMBER
+			,EXAMPLE_CONTENTS_${language.code}    AS EXAMPLE_CONTENTS
+			,EXAMPLE_IMAGE_PATH_${language.code}  AS EXAMPLE_IMAGE_PATH
+		FROM
+			T_SELF_EXAM_LINE_DRAWING
+		WHERE
+			QUESTION_ID = #{questionId}
+		ORDER BY NEWID()
+	</select>
+
+	<sql id="fromSelfExamQuestion">
+		FROM
+			T_PROGRESS_SELF_EXAM_QUESTION PSEQ
+		JOIN
+			T_SELF_EXAM_QUESTION SEQ
+				ON  SEQ.QUESTION_ID = PSEQ.QUESTION_ID
+		JOIN
+			T_SELF_EXAM_PROGRESS_STATUS SEPS
+				ON  SEPS.SELF_EXAM_PROGRESS_ID = PSEQ.SELF_EXAM_PROGRESS_ID
+				AND SEPS.SELF_EXAM_ID = SEQ.SELF_EXAM_ID
+				AND SEPS.USER_ID = #{userId}
+		JOIN
+			T_SELF_EXAM SE
+				ON  SE.SELF_EXAM_ID = SEQ.SELF_EXAM_ID
+				AND SE.SKILL_CODE = #{skillCode}
+				AND SE.EXAM_CLASS_CODE = #{examClassCode}
+	</sql>
+
+	<insert id="insertSelfExamAnswer" parameterType="com.iscreammedia.clic.front.domain.ExamAnswer">
+		/* evaluation.insertSelfExamAnswer : 자가 시험 답변 등록 */
+		MERGE INTO T_PROGRESS_SELF_EXAM_ANSWER AS PSEA
+		USING (
+			SELECT
+				#{questionId} AS QUESTION_ID
+				,#{examProgressId} AS SELF_EXAM_PROGRESS_ID
+				,#{shortAnswer, jdbcType=VARCHAR} AS SHORT_ANSWER
+				,#{isAnswer} AS IS_ANSWER
+				<foreach collection="exampleAnswer" item="item" index="i">
+				,#{item, jdbcType=INTEGER} AS EXAMPLE_ANSWER_${i + 1}
+				</foreach>
+		) AS T
+			ON  PSEA.QUESTION_ID = T.QUESTION_ID
+			AND PSEA.SELF_EXAM_PROGRESS_ID = T.SELF_EXAM_PROGRESS_ID
+		WHEN MATCHED THEN
+			UPDATE
+			SET
+				 PSEA.SHORT_ANSWER          = T.SHORT_ANSWER
+				,PSEA.IS_ANSWER             = T.IS_ANSWER
+				<foreach collection="exampleAnswer" item="item" index="i">
+				,PSEA.EXAMPLE_ANSWER_${i + 1} = T.EXAMPLE_ANSWER_${i + 1}
+				</foreach>
+				,PSEA.UPDATED_DATE          = GETDATE()
+		WHEN NOT MATCHED THEN
+			INSERT (QUESTION_ID, SELF_EXAM_PROGRESS_ID, SHORT_ANSWER, IS_ANSWER<foreach collection="exampleAnswer" index="i">, EXAMPLE_ANSWER_${i + 1}</foreach>, CREATED_DATE)
+			VALUES (T.QUESTION_ID, T.SELF_EXAM_PROGRESS_ID, T.SHORT_ANSWER, T.IS_ANSWER<foreach collection="exampleAnswer" index="i">, T.EXAMPLE_ANSWER_${i + 1}</foreach>, GETDATE())
+		;
+	</insert>
+
+
+	<select id="confirmSkillExamQuestion" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamQuestionCnt">
+		/* evaluation.confirmSkillExamQuestion : 기술 시험 문항 존재 확인 */
+		SELECT
+			SEPS.SKILL_EXAM_PROGRESS_ID AS EXAM_PROGRESS_ID
+			,COUNT(*) AS QUESTION_CNT
+		<include refid="fromSkillExamQuestion"/>
+		GROUP BY SEPS.SKILL_EXAM_PROGRESS_ID
+	</select>
+
+	<select id="getSkillExamQuestion" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamQuestion">
+		/* evaluation.getSkillExamQuestion : 기술 시험 문항 조회 */
+		SELECT
+		<include refid="columnExamQuestion"/>
+			,PSEQ.SKILL_EXAM_PROGRESS_ID AS EXAM_PROGRESS_ID
+		<include refid="fromSkillExamQuestion"/>
+		WHERE
+			PSEQ.DISPLAY_SEQUENCE = #{no}
+	</select>
+
+	<update id="updateSkillExamQuestionComplete" parameterType="map">
+		/* evaluation.updateSkillExamQuestionComplete : 기술 시험 문항 진행 완료 처리 */
+		UPDATE
+			T_PROGRESS_SKILL_EXAM_QUESTION
+		SET
+			IS_PROGRESS = 'Y'
+		WHERE
+			QUESTION_ID           = #{questionId}
+		AND SKILL_EXAM_PROGRESS_ID = #{examProgressId}
+	</update>
+
+	<select id="getSkillExamAnswer" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamAnswer">
+		/* evaluation.getSkillExamAnswer : 기술 시험 문항 답변 조회 */
+		SELECT
+			QUESTION_ID
+			,SKILL_EXAM_PROGRESS_ID AS EXAM_PROGRESS_ID
+			,SHORT_ANSWER
+			,EXAMPLE_ANSWER_1
+			,EXAMPLE_ANSWER_2
+			,EXAMPLE_ANSWER_3
+			,EXAMPLE_ANSWER_4
+			,EXAMPLE_ANSWER_5
+		FROM
+			T_PROGRESS_SKILL_EXAM_ANSWER
+		WHERE
+			QUESTION_ID           = #{questionId}
+		AND SKILL_EXAM_PROGRESS_ID = #{examProgressId}
+	</select>
+
+	<select id="getSkillExamExampleList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamExample">
+		/* evaluation.getSkillExamExampleList : 기술 시험 보기 조회 */
+		SELECT
+			QUESTION_ID
+			,EXAMPLE_NUMBER
+			,EXAMPLE_CONTENTS_${language.code}    AS EXAMPLE_CONTENTS
+			,EXAMPLE_IMAGE_PATH_${language.code}  AS EXAMPLE_IMAGE_PATH
+			,IS_ANSWER
+			,LINE_DRAWING_ANSWER_NUMBER
+		FROM
+			T_SKILL_EXAM_EXAMPLE
+		WHERE
+			QUESTION_ID = #{questionId}
+		ORDER BY EXAMPLE_NUMBER ASC
+	</select>
+
+	<select id="getSkillExamExampleList2" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamExample">
+		/* evaluation.getSkillExamExampleList2 : 기술 시험 선긋기 왼쪽 보기 조회 */
+		SELECT
+			QUESTION_ID
+			,EXAMPLE_ID                           AS EXAMPLE_NUMBER
+			,EXAMPLE_CONTENTS_${language.code}    AS EXAMPLE_CONTENTS
+			,EXAMPLE_IMAGE_PATH_${language.code}  AS EXAMPLE_IMAGE_PATH
+		FROM
+			T_SKILL_EXAM_LINE_DRAWING
+		WHERE
+			QUESTION_ID = #{questionId}
+		ORDER BY NEWID()
+	</select>
+
+	<sql id="fromSkillExamQuestion">
+		FROM
+			T_PROGRESS_SKILL_EXAM_QUESTION PSEQ
+		JOIN
+			T_SKILL_EXAM_QUESTION SEQ
+				ON  SEQ.QUESTION_ID = PSEQ.QUESTION_ID
+		JOIN
+			T_SKILL_EXAM_PROGRESS_STATUS SEPS
+				ON  SEPS.SKILL_EXAM_PROGRESS_ID = PSEQ.SKILL_EXAM_PROGRESS_ID
+				AND SEPS.SKILL_EXAM_ID = SEQ.SKILL_EXAM_ID
+				AND SEPS.USER_ID = #{userId}
+		JOIN
+			T_SKILL_EXAM SE
+				ON  SE.SKILL_EXAM_ID = SEQ.SKILL_EXAM_ID
+				AND SE.SKILL_CODE = #{skillCode}
+				AND SE.EXAM_CLASS_CODE = #{examClassCode}
+	</sql>
+
+	<insert id="insertSkillExamAnswer" parameterType="com.iscreammedia.clic.front.domain.ExamAnswer">
+		/* evaluation.insertSkillExamAnswer : 기술 시험 답변 등록 */
+		MERGE INTO T_PROGRESS_SKILL_EXAM_ANSWER AS PSEA
+		USING (
+			SELECT
+				#{questionId} AS QUESTION_ID
+				,#{examProgressId} AS SKILL_EXAM_PROGRESS_ID
+				,#{shortAnswer, jdbcType=VARCHAR} AS SHORT_ANSWER
+				,#{isAnswer} AS IS_ANSWER
+				<foreach collection="exampleAnswer" item="item" index="i">
+				,#{item, jdbcType=INTEGER} AS EXAMPLE_ANSWER_${i + 1}
+				</foreach>
+		) AS T
+			ON  PSEA.QUESTION_ID = T.QUESTION_ID
+			AND PSEA.SKILL_EXAM_PROGRESS_ID = T.SKILL_EXAM_PROGRESS_ID
+		WHEN MATCHED THEN
+			UPDATE
+			SET
+				 PSEA.SHORT_ANSWER          = T.SHORT_ANSWER
+				,PSEA.IS_ANSWER              = T.IS_ANSWER
+				<foreach collection="exampleAnswer" item="item" index="i">
+				,PSEA.EXAMPLE_ANSWER_${i + 1} = T.EXAMPLE_ANSWER_${i + 1}
+				</foreach>
+				,PSEA.UPDATED_DATE          = GETDATE()
+		WHEN NOT MATCHED THEN
+			INSERT (QUESTION_ID, SKILL_EXAM_PROGRESS_ID, SHORT_ANSWER, IS_ANSWER<foreach collection="exampleAnswer" index="i">, EXAMPLE_ANSWER_${i + 1}</foreach>, CREATED_DATE)
+			VALUES (T.QUESTION_ID, T.SKILL_EXAM_PROGRESS_ID, T.SHORT_ANSWER, T.IS_ANSWER<foreach collection="exampleAnswer" index="i">, T.EXAMPLE_ANSWER_${i + 1}</foreach>, GETDATE())
+		;
+	</insert>
+
+	<sql id="columnExamQuestion">
+		PSEQ.QUESTION_ID
+		,PSEQ.DISPLAY_SEQUENCE
+		,ISNULL(PSEQ.IS_PROGRESS, 'N') AS IS_PROGRESS
+		<!-- ,DATE_FORMAT(SEPS.EXAM_START_TIME, '%Y-%m-%d %H:%i:%s') AS EXAM_START_TIME -->
+		,SEPS.EXAM_START_TIME
+		,SEPS.EXAM_LIMIT_TIME
+		,SEPS.IS_COMPLETE
+		,SEPS.IS_PASS
+		,SE.LIMIT_TIME
+		,SE.TOTAL_QUESTION_COUNT
+		,SE.EXAM_TITLE_${language.code}           AS EXAM_TITLE
+		,SE.EXAM_CONTENTS_${language.code}        AS EXAM_CONTENTS
+		,SEQ.QUESTION_TITLE_${language.code}      AS QUESTION_TITLE
+		,SEQ.QUESTION_CONTENTS_${language.code}   AS QUESTION_CONTENTS
+		,SEQ.QUESTION_IMAGE_PATH_${language.code} AS QUESTION_IMAGE_PATH
+		,SEQ.QUESTION_TYPE_CODE
+	</sql>
+
+
+	<update id="updateSelfExamEvaluation" parameterType="com.iscreammedia.clic.front.domain.ExamProgressStatus">
+		/* evaluation.updateSelfExamEvaluation : 자가 시험 평가 등록 */
+		UPDATE
+			T_SELF_EXAM_PROGRESS_STATUS
+		SET  FINAL_SCORE               = T.FINAL_SCORE
+			,IS_COMPLETE               = T.IS_COMPLETE
+			,IS_PASS                   = T.IS_PASS
+			,EXAM_PROGRESS_STATUS_CODE = CASE T.IS_PASS WHEN 'Y' THEN '1405' ELSE '1404' END
+			,EXAM_EVALUATION           = #{examEvaluation}
+			,EXAM_EVALUATION_CONTENTS  = #{examEvaluationContents}
+			,UPDATED_DATE              = GETDATE()
+		FROM
+			T_SELF_EXAM_PROGRESS_STATUS SEPS
+		JOIN (
+				SELECT
+					T.*
+					,'Y' AS IS_COMPLETE
+					,CASE WHEN FINAL_SCORE >= PASS_CRITERIA THEN 'Y' ELSE 'N' END AS IS_PASS
+				FROM (
+					SELECT
+						SE.SELF_EXAM_ID
+						,SE.PASS_CRITERIA
+						,SEPS.SELF_EXAM_PROGRESS_ID
+						,SEPS.USER_ID
+						,FLOOR(CONVERT(FLOAT, SUM(CASE PSEA.IS_ANSWER WHEN 'Y' THEN 1 ELSE 0 END)) / SE.TOTAL_QUESTION_COUNT * 100) AS FINAL_SCORE
+					FROM
+						T_SELF_EXAM SE
+					JOIN
+						T_SELF_EXAM_PROGRESS_STATUS SEPS
+							ON SEPS.SELF_EXAM_ID = SE.SELF_EXAM_ID
+							AND SEPS.USER_ID = #{userId}
+					JOIN
+						T_PROGRESS_SELF_EXAM_ANSWER PSEA
+							ON PSEA.SELF_EXAM_PROGRESS_ID = SEPS.SELF_EXAM_PROGRESS_ID
+					WHERE
+						SE.SKILL_CODE = #{skillCode}
+					AND SE.EXAM_CLASS_CODE = #{examClassCode}
+					GROUP BY SE.SELF_EXAM_ID
+						,SE.PASS_CRITERIA
+						,SE.TOTAL_QUESTION_COUNT
+						,SEPS.SELF_EXAM_PROGRESS_ID
+						,SEPS.USER_ID
+				) T
+			) T
+			ON SEPS.SELF_EXAM_PROGRESS_ID = T.SELF_EXAM_PROGRESS_ID
+		<selectKey resultType="string" keyProperty="isPass" order="AFTER">
+			SELECT SEPS.IS_PASS
+			FROM
+				T_SELF_EXAM SE
+			JOIN
+				T_SELF_EXAM_PROGRESS_STATUS SEPS
+					ON SEPS.SELF_EXAM_ID = SE.SELF_EXAM_ID
+					AND SEPS.USER_ID = #{userId}
+			WHERE
+				SE.SKILL_CODE = #{skillCode}
+			AND SE.EXAM_CLASS_CODE = #{examClassCode}
+		</selectKey>
+	</update>
+
+	<update id="updateSkillExamEvaluation" parameterType="com.iscreammedia.clic.front.domain.ExamProgressStatus">
+		/* evaluation.updateSkillExamEvaluation : 기술 시험 평가 등록 */
+		UPDATE
+			T_SKILL_EXAM_PROGRESS_STATUS
+		SET  FINAL_SCORE               = T.FINAL_SCORE
+			,IS_COMPLETE               = T.IS_COMPLETE
+			,IS_PASS                   = T.IS_PASS
+			,EXAM_PROGRESS_STATUS_CODE = CASE T.IS_PASS WHEN 'Y' THEN '1405' ELSE '1404' END
+			,EXAM_EVALUATION           = #{examEvaluation}
+			,EXAM_EVALUATION_CONTENTS  = #{examEvaluationContents}
+			,UPDATED_DATE              = GETDATE()
+		FROM
+			T_SKILL_EXAM_PROGRESS_STATUS SEPS
+		JOIN (
+				SELECT
+					T.*
+					,'Y' AS IS_COMPLETE
+					,CASE WHEN FINAL_SCORE >= PASS_CRITERIA THEN 'Y' ELSE 'N' END AS IS_PASS
+				FROM (
+					SELECT
+						SE.SKILL_EXAM_ID
+						,SE.PASS_CRITERIA
+						,SEPS.SKILL_EXAM_PROGRESS_ID
+						,SEPS.USER_ID
+						,FLOOR(CONVERT(FLOAT, SUM(CASE PSEA.IS_ANSWER WHEN 'Y' THEN 1 ELSE 0 END)) / SE.TOTAL_QUESTION_COUNT * 100) AS FINAL_SCORE
+					FROM
+						T_SKILL_EXAM SE
+					JOIN
+						T_SKILL_EXAM_PROGRESS_STATUS SEPS
+							ON SEPS.SKILL_EXAM_ID = SE.SKILL_EXAM_ID
+							AND SEPS.USER_ID = #{userId}
+					JOIN
+						T_PROGRESS_SKILL_EXAM_ANSWER PSEA
+							ON PSEA.SKILL_EXAM_PROGRESS_ID = SEPS.SKILL_EXAM_PROGRESS_ID
+					WHERE
+						SE.SKILL_CODE = #{skillCode}
+					AND SE.EXAM_CLASS_CODE = #{examClassCode}
+					GROUP BY SE.SKILL_EXAM_ID
+						,SE.PASS_CRITERIA
+						,SE.TOTAL_QUESTION_COUNT
+						,SEPS.SKILL_EXAM_PROGRESS_ID
+						,SEPS.USER_ID
+				) T
+			) T
+			ON SEPS.SKILL_EXAM_PROGRESS_ID = T.SKILL_EXAM_PROGRESS_ID
+		<selectKey resultType="string" keyProperty="isPass" order="AFTER">
+			SELECT SEPS.IS_PASS
+			FROM
+				T_SKILL_EXAM SE
+			JOIN
+				T_SKILL_EXAM_PROGRESS_STATUS SEPS
+					ON  SEPS.SKILL_EXAM_ID = SE.SKILL_EXAM_ID
+					AND SEPS.USER_ID = #{userId}
+			WHERE
+				SE.SKILL_CODE = #{skillCode}
+			AND SE.EXAM_CLASS_CODE = #{examClassCode}
+		</selectKey>
+	</update>
+
+
+	<select id="getSelfExamMeasureList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamMeasure">
+		/* evaluation.getSelfExamMeasureList : 자가 시험 척도 목록 */
+		SELECT
+		<include refid="columnExamMeasure"/>
+		FROM
+			T_SELF_EXAM_MEASURE SEM
+		JOIN
+			T_MEASURE M
+				ON  M.MEASURE_ID = SEM.MEASURE_ID
+				AND M.MEASURE_TYPE_CODE = '2302' /* 자가 시험 */
+		JOIN
+			T_SELF_EXAM SE
+				ON  SE.SELF_EXAM_ID = SEM.SELF_EXAM_ID
+				AND SE.SKILL_CODE = #{skillCode}
+				AND SE.EXAM_CLASS_CODE = #{examClassCode}
+		WHERE
+			SEM.QUESTION_COUNT > 0
+		AND SEM.IS_USE = 'Y'
+		ORDER BY TITLE ASC
+	</select>
+
+	<select id="getSelfExamQuestionRandomList" parameterType="com.iscreammedia.clic.front.domain.ExamMeasure" resultType="string">
+		/* evaluation.getSelfExamQuestionRandomList : 자가 시험 문항 척도별 랜덤 추출 */
+		SELECT
+			SEQ.QUESTION_ID
+		FROM
+			T_SELF_EXAM_QUESTION SEQ
+		JOIN
+			T_SELF_EXAM SE
+				ON  SE.SELF_EXAM_ID = SEQ.SELF_EXAM_ID
+		WHERE
+			SE.SKILL_CODE = #{skillCode}
+		AND SE.EXAM_CLASS_CODE = #{examClassCode}
+		AND SEQ.MEASURE_ID = #{measureId}
+		ORDER BY NEWID()
+		OFFSET 0 ROW
+		FETCH NEXT #{questionCount} ROW ONLY
+	</select>
+
+	<insert id="insertSelfExamHistory" parameterType="map">
+		/* evaluation.insertSelfExamHistory : 자가 시험 내역 저장 */
+		INSERT INTO T_SELF_EXAM_HISTORY (SELF_EXAM_ID, USER_ID, EXAM_START_DATE)
+		SELECT
+			SELF_EXAM_ID
+			,#{userId}
+			,GETDATE()
+		FROM
+			T_SELF_EXAM
+		WHERE
+			SKILL_CODE = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+	</insert>
+
+	<insert id="insertSelfExamQuestion" parameterType="map">
+		/* evaluation.insertSelfExamQuestion : 자가 시험 문항 추출 후 저장 */
+		INSERT INTO T_PROGRESS_SELF_EXAM_QUESTION (QUESTION_ID, SELF_EXAM_PROGRESS_ID, DISPLAY_SEQUENCE, IS_PROGRESS)
+		SELECT
+			SEQ.QUESTION_ID
+			,SEPS.SELF_EXAM_PROGRESS_ID
+			,ROW_NUMBER() OVER(ORDER BY NEWID()) AS DISPLAY_SEQUENCE
+			,'N' AS IS_PROGRESS
+		FROM
+			T_SELF_EXAM_QUESTION SEQ
+		JOIN
+			T_SELF_EXAM_PROGRESS_STATUS SEPS
+				ON  SEPS.SELF_EXAM_ID = SEQ.SELF_EXAM_ID
+				AND SEPS.USER_ID = #{userId}
+		JOIN
+			T_SELF_EXAM SE
+				ON  SE.SELF_EXAM_ID = SEQ.SELF_EXAM_ID
+				AND SE.SKILL_CODE = #{skillCode}
+				AND SE.EXAM_CLASS_CODE = #{examClassCode}
+		WHERE
+			SEQ.QUESTION_ID IN
+		<foreach collection="questionIdList" item="item" separator="," open="(" close=")">#{item}</foreach>
+	</insert>
+
+	<select id="getSkillExamMeasureList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamMeasure">
+		/* evaluation.getSkillExamMeasureList : 기술 시험 척도 목록 */
+		SELECT
+		<include refid="columnExamMeasure"/>
+		FROM
+			T_SKILL_EXAM_MEASURE SEM
+		JOIN
+			T_MEASURE M
+				ON  M.MEASURE_ID = SEM.MEASURE_ID
+				AND M.MEASURE_TYPE_CODE = '2303' /* 기술 시험 */
+		JOIN
+			T_SKILL_EXAM SE
+				ON  SE.SKILL_EXAM_ID = SEM.SKILL_EXAM_ID
+				AND SE.SKILL_CODE = #{skillCode}
+				AND SE.EXAM_CLASS_CODE = #{examClassCode}
+		WHERE
+			SEM.QUESTION_COUNT > 0
+		AND SEM.IS_USE = 'Y'
+		ORDER BY TITLE ASC
+	</select>
+
+	<select id="getSkillExamQuestionRandomList" parameterType="com.iscreammedia.clic.front.domain.ExamMeasure" resultType="string">
+		/* evaluation.getSkillExamQuestionRandomList : 기술 시험 문항 척도별 랜덤 추출 */
+		SELECT
+			SEQ.QUESTION_ID
+		FROM
+			T_SKILL_EXAM_QUESTION SEQ
+		JOIN
+			T_SKILL_EXAM SE
+				ON  SE.SKILL_EXAM_ID = SEQ.SKILL_EXAM_ID
+		WHERE
+			SE.SKILL_CODE = #{skillCode}
+		AND SE.EXAM_CLASS_CODE = #{examClassCode}
+		AND SEQ.MEASURE_ID = #{measureId}
+		ORDER BY NEWID()
+		OFFSET 0 ROW
+		FETCH NEXT #{questionCount} ROW ONLY
+	</select>
+
+	<insert id="insertSkillExamHistory" parameterType="map">
+		/* evaluation.insertSkillExamHistory : 기술 시험 내역 저장 */
+		INSERT INTO T_SKILL_EXAM_HISTORY (SKILL_EXAM_ID, USER_ID, EXAM_START_DATE)
+		SELECT
+			SKILL_EXAM_ID
+			,#{userId}
+			,GETDATE()
+		FROM
+			T_SKILL_EXAM
+		WHERE
+			SKILL_CODE = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+	</insert>
+
+	<insert id="insertSkillExamQuestion" parameterType="map">
+		/* evaluation.insertSkillExamQuestion : 기술 시험 문항 추출 후 저장 */
+		INSERT INTO T_PROGRESS_SKILL_EXAM_QUESTION (QUESTION_ID, SKILL_EXAM_PROGRESS_ID, DISPLAY_SEQUENCE, IS_PROGRESS)
+		SELECT
+			SEQ.QUESTION_ID
+			,SEPS.SKILL_EXAM_PROGRESS_ID
+			,ROW_NUMBER() OVER(ORDER BY NEWID()) AS DISPLAY_SEQUENCE
+			,'N' AS IS_PROGRESS
+		FROM
+			T_SKILL_EXAM_QUESTION SEQ
+		JOIN
+			T_SKILL_EXAM_PROGRESS_STATUS SEPS
+				ON  SEPS.SKILL_EXAM_ID = SEQ.SKILL_EXAM_ID
+				AND SEPS.USER_ID = #{userId}
+		JOIN
+			T_SKILL_EXAM SE
+				ON  SE.SKILL_EXAM_ID = SEQ.SKILL_EXAM_ID
+				AND SE.SKILL_CODE = #{skillCode}
+				AND SE.EXAM_CLASS_CODE = #{examClassCode}
+		WHERE
+			SEQ.QUESTION_ID IN
+		<foreach collection="questionIdList" item="item" separator="," open="(" close=")">#{item}</foreach>
+	</insert>
+
+	<sql id="columnExamMeasure">
+		M.MEASURE_ID
+		,M.TITLE_${language.code}     AS TITLE
+		,M.CONTENTS_${language.code}  AS CONTENTS
+		,ISNULL(SEM.QUESTION_COUNT, 0) AS QUESTION_COUNT
+	</sql>
+
+	<select id="getExamResult" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamResult">
+		/* evaluation.getExamResult : 시험 결과 조회 */
+		SELECT
+			SPS.SKILL_CODE
+			,SPS.EXAM_CLASS_CODE
+			,ISNULL(SPS.FRIEND_RECOMMEND_COUNT, 0)                AS FRIEND_RECOMMEND_COUNT
+			,SEPS1.SELF_EXAM_PROGRESS_ID
+			,CASE WHEN SEPS1.IS_COMPLETE  = 'Y' THEN 1 ELSE 0 END AS SELF_COMPLETE
+			,CASE WHEN SEPS1.IS_PASS      = 'Y' THEN 1 ELSE 0 END AS SELF_PASS
+			,ISNULL(SEPS1.FINAL_SCORE, 0)                         AS SELF_FINAL_SCORE
+			,SEPS2.SKILL_EXAM_PROGRESS_ID
+			,CASE WHEN SEPS2.IS_COMPLETE  = 'Y' THEN 1 ELSE 0 END AS SKILL_COMPLETE
+			,CASE WHEN SEPS2.IS_PASS      = 'Y' THEN 1 ELSE 0 END AS SKILL_PASS
+			,ISNULL(SEPS2.FINAL_SCORE, 0)                         AS SKILL_FINAL_SCORE
+		FROM
+			T_SKILL_PROGRESS_STATUS SPS
+		LEFT JOIN
+			T_SELF_EXAM_PROGRESS_STATUS SEPS1
+				ON  SEPS1.SELF_EXAM_ID = SPS.SELF_EXAM_ID
+				AND SEPS1.USER_ID = SPS.USER_ID
+		LEFT JOIN
+			T_SKILL_EXAM_PROGRESS_STATUS SEPS2
+				ON  SEPS2.SKILL_EXAM_ID = SPS.SKILL_EXAM_ID
+				AND SEPS2.USER_ID = SPS.USER_ID
+		WHERE
+			SPS.USER_ID = #{userId}
+		AND SPS.SKILL_CODE = #{skillCode}
+		AND SPS.EXAM_CLASS_CODE = #{examClassCode}
+	</select>
+
+	<select id="getExamResultDetailList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.ExamResultDetail">
+		/* evaluation.getExamResultDetailList : 시험 결과 상세 조회 */
+		SELECT
+			A.*
+			,ISNULL(FLOOR(CONVERT(FLOAT,SELF_ANSWER_COUNT)  / SELF_QUESTION_COUNT  * 100), 0) AS SELF_SCORE
+			,ISNULL(FLOOR(CONVERT(FLOAT,SKILL_ANSWER_COUNT) / SKILL_QUESTION_COUNT * 100), 0) AS SKILL_SCORE
+		FROM (
+			SELECT
+				M.MEASURE_LEVEL
+				,M.TITLE_${language.code}     AS TITLE
+				,M.CONTENTS_${language.code}  AS CONTENTS
+				,MAX(ISNULL(SELF.QUESTION_COUNT, 1))  AS SELF_QUESTION_COUNT
+				,MAX(ISNULL(SELF.ANSWER_COUNT, 0))    AS SELF_ANSWER_COUNT
+				,MAX(ISNULL(SKILL.QUESTION_COUNT, 1)) AS SKILL_QUESTION_COUNT
+				,MAX(ISNULL(SKILL.ANSWER_COUNT, 0))   AS SKILL_ANSWER_COUNT
+			FROM
+				T_MEASURE M
+			/* 자가 시험 결과 */
+			LEFT JOIN (
+				SELECT
+					M.MEASURE_ID
+					,ISNULL(SEM.QUESTION_COUNT, 0) AS QUESTION_COUNT
+					,SUM(CASE PSEA.IS_ANSWER WHEN 'Y' THEN 1 ELSE 0 END) AS ANSWER_COUNT
+				FROM
+					T_SELF_EXAM_MEASURE SEM
+				JOIN
+					T_MEASURE M
+						ON  M.MEASURE_ID = SEM.MEASURE_ID
+						AND M.MEASURE_TYPE_CODE = '2302' /* 자가 시험 */
+				JOIN
+					T_SELF_EXAM_QUESTION SEQ
+						ON  SEQ.SELF_EXAM_ID = SEM.SELF_EXAM_ID
+						AND SEQ.MEASURE_ID = M.MEASURE_ID
+				JOIN
+					T_PROGRESS_SELF_EXAM_ANSWER PSEA
+						ON  PSEA.QUESTION_ID = SEQ.QUESTION_ID
+						AND PSEA.SELF_EXAM_PROGRESS_ID = #{selfExamProgressId}
+				WHERE
+					SEM.QUESTION_COUNT > 0
+				AND SEM.IS_USE = 'Y'
+				GROUP BY 
+					M.MEASURE_ID
+					,SEM.QUESTION_COUNT
+			) SELF
+					ON SELF.MEASURE_ID = M.MEASURE_ID
+			/* 기술 시험 결과 */
+			LEFT JOIN (
+				SELECT
+					M.MEASURE_ID
+					,ISNULL(SEM.QUESTION_COUNT, 0) AS QUESTION_COUNT
+					,SUM(CASE PSEA.IS_ANSWER WHEN 'Y' THEN 1 ELSE 0 END) AS ANSWER_COUNT
+				FROM
+					T_SKILL_EXAM_MEASURE SEM
+				JOIN
+					T_MEASURE M
+						ON  M.MEASURE_ID = SEM.MEASURE_ID
+						AND M.MEASURE_TYPE_CODE = '2303' /* 기술 시험 */
+				JOIN
+					T_SKILL_EXAM_QUESTION SEQ
+						ON  SEQ.SKILL_EXAM_ID = SEM.SKILL_EXAM_ID
+						AND SEQ.MEASURE_ID = M.MEASURE_ID
+				JOIN
+					T_PROGRESS_SKILL_EXAM_ANSWER PSEA
+						ON  PSEA.QUESTION_ID = SEQ.QUESTION_ID
+						AND PSEA.SKILL_EXAM_PROGRESS_ID = #{skillExamProgressId}
+				WHERE
+					SEM.QUESTION_COUNT > 0
+				AND SEM.IS_USE = 'Y'
+				GROUP BY 
+					M.MEASURE_ID
+					,SEM.QUESTION_COUNT
+			) SKILL
+					ON SKILL.MEASURE_ID = M.MEASURE_ID
+			WHERE (
+					M.MEASURE_TYPE_CODE = '2302' /* 자가 시험 */
+				OR  M.MEASURE_TYPE_CODE = '2303' /* 기술 시험 */
+			)
+			AND (
+				SELF.QUESTION_COUNT != 0 OR SKILL.QUESTION_COUNT != 0
+			)
+			GROUP BY
+				M.MEASURE_LEVEL
+				,M.TITLE_${language.code}
+				,M.CONTENTS_${language.code}
+		) A
+		ORDER BY TITLE ASC
+	</select>
+
+	<insert id="insertSkillFriendAuth" parameterType="com.iscreammedia.clic.front.domain.SkillFriendAuth">
+		/* evaluation.insertSkillFriendAuth : 스킬 인증 요청 */
+		MERGE INTO T_SKILL_FRIEND_AUTH AS SFA
+		USING (
+			SELECT
+				SKILL_CODE
+				,EXAM_CLASS_CODE
+				,USER_ID
+				,#{friendId} AS FRIEND_ID
+				,'R' AS IS_AUTH
+			FROM (
+				SELECT
+					SKILL_CODE
+					,EXAM_CLASS_CODE
+					,USER_ID
+					,COUNT(*) AS CNT
+				FROM
+					T_SKILL_FRIEND_AUTH
+				WHERE
+					SKILL_CODE = #{skillCode}
+				AND EXAM_CLASS_CODE = #{examClassCode}
+				AND USER_ID = #{userId}
+				AND IS_AUTH IN ('R', 'Y')
+				GROUP BY SKILL_CODE, EXAM_CLASS_CODE, USER_ID
+			) A
+			WHERE
+				<![CDATA[
+				CNT < 3
+				]]>
+			UNION
+			SELECT 
+				#{skillCode}
+				, #{examClassCode}
+				, #{userId}
+				, #{friendId}
+				,'R'
+		) AS T
+			ON  SFA.USER_ID = T.USER_ID
+			AND SFA.FRIEND_ID = T.FRIEND_ID
+			AND SFA.SKILL_CODE = T.SKILL_CODE
+			AND SFA.EXAM_CLASS_CODE = T.EXAM_CLASS_CODE
+		WHEN MATCHED THEN
+			UPDATE
+			SET
+				SFA.IS_AUTH            = T.IS_AUTH
+				,SFA.AUTH_REQUEST_DATE = GETDATE()
+				,SFA.UPDATED_DATE      = GETDATE()
+		WHEN NOT MATCHED THEN
+			INSERT (SKILL_CODE, EXAM_CLASS_CODE, USER_ID, FRIEND_ID, IS_AUTH, AUTH_REQUEST_DATE)
+			VALUES (T.SKILL_CODE, T.EXAM_CLASS_CODE, T.USER_ID, T.FRIEND_ID, T.IS_AUTH, GETDATE())
+		;
+	</insert>
+
+	<delete id="deleteSkillFriendAuth" parameterType="com.iscreammedia.clic.front.domain.SkillFriendAuth">
+		/* evaluation.deleteSkillFriendAuth : 스킬 인증 요청 취소 */
+		DELETE
+		FROM
+			T_SKILL_FRIEND_AUTH
+		WHERE
+			SKILL_CODE = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+		AND USER_ID = #{userId}
+		AND FRIEND_ID = #{friendId}
+	</delete>
+
+	<delete id="completeSkillFriendAuth" parameterType="com.iscreammedia.clic.front.domain.SkillFriendAuth">
+		/* evaluation.completeSkillFriendAuth : 스킬 인증 완료 */
+		UPDATE
+			T_SKILL_FRIEND_AUTH
+		SET
+			IS_AUTH = 'Y'
+			,AUTH_CONTENTS = #{authContents}
+			,UPDATED_DATE = GETDATE()
+		WHERE
+			SKILL_CODE = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+		AND USER_ID = #{userId}
+		AND FRIEND_ID = #{friendId}
+	</delete>
+
+	<update id="updateSkillFriendAuthCount" parameterType="com.iscreammedia.clic.front.domain.SkillProgressStatus">
+		/* evaluation.updateSkillFriendAuthCount : 스킬 인증 완료 카운트 업데이트 */
+		<selectKey resultType="int" keyProperty="friendRecommendCount" order="BEFORE">
+			SELECT
+				COUNT(*)
+			FROM
+				T_SKILL_FRIEND_AUTH
+			WHERE
+				SKILL_CODE = #{skillCode}
+			AND EXAM_CLASS_CODE = #{examClassCode}
+			AND USER_ID = #{userId}
+			AND IS_AUTH = 'Y'
+		</selectKey>
+		UPDATE
+			T_SKILL_PROGRESS_STATUS
+		SET
+			FRIEND_RECOMMEND_COUNT = #{friendRecommendCount}
+		WHERE
+			SKILL_CODE = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+		AND USER_ID = #{userId}
+	</update>
+
+	<select id="getAuthRequestCount" parameterType="map" resultType="int">
+		/* evaluation.getAuthRequestList : 스킬 인증 요청 카운트 */
+		SELECT
+			COUNT(*)
+		<include refid="fromAuthRequest"/>
+		<include refid="whereAuthRequest"/>
+	</select>
+
+	<select id="getAuthRequestList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.SkillFriendAuth">
+		/* evaluation.getAuthRequestList : 스킬 인증 요청 목록 조회 */
+		SELECT
+		<include refid="columnFriend"/>
+		<include refid="fromAuthRequest"/>
+		<include refid="whereAuthRequest"/>
+		ORDER BY SFA.AUTH_REQUEST_DATE ASC
+	</select>
+
+	<sql id="fromAuthRequest">
+		FROM
+			T_SKILL_FRIEND_AUTH SFA
+		LEFT JOIN
+			T_USER U
+				ON SFA.FRIEND_ID = U.USER_ID
+		LEFT JOIN
+			T_JOB_TABLE J
+				ON J.JOB_ID = U.JOB_ID
+	</sql>
+
+	<sql id="whereAuthRequest">
+		WHERE
+			SFA.SKILL_CODE = #{skillCode}
+		AND SFA.EXAM_CLASS_CODE = #{examClassCode}
+		AND SFA.USER_ID = #{userId}
+		AND SFA.IS_AUTH IN ('R', 'Y')
+	</sql>
+
+	<select id="getFriendCount" parameterType="map" resultType="int">
+		/* evaluation.getFriendCount : 친구 카운트 조회 */
+		SELECT
+			COUNT(*)
+		<include refid="fromFriend"/>
+		<include refid="whereFriend"/>
+	</select>
+
+	<select id="getFriendList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.SkillFriendAuth">
+		/* evaluation.getFriendList : 친구 목록 조회 */
+		SELECT
+		<include refid="columnFriend"/>
+		<include refid="fromFriend"/>
+		<include refid="whereFriend"/>
+		ORDER BY U.NAME ASC, U.FIRSTNAME ASC
+		<if test="@org.apache.commons.lang3.StringUtils@isEmpty(searchKeyword)">
+		OFFSET ${offset} ROW
+		FETCH NEXT ${limit} ROW ONLY
+		</if>
+	</select>
+
+	<sql id="columnFriend">
+		U.USER_ID
+		,U.COUNTRY_CODE
+		,U.NAME
+		,U.FIRSTNAME
+		,U.NICKNAME
+		,U.USER_IMAGE_PATH
+		,SFA.FRIEND_ID
+		,SFA.AUTH_CONTENTS
+		,ISNULL(SFA.IS_AUTH, 'N')    AS IS_AUTH
+		,SFA.AUTH_REQUEST_DATE
+		,J.JOB_NAME_${language.code} AS JOB_NAME
+	</sql>
+
+	<sql id="fromFriend">
+		FROM
+			T_USER U
+		JOIN
+			T_FRIEND F
+				ON F.FRIEND_ID = U.USER_ID
+				AND F.FRIEND_STATUS_CODE = '1103'
+				AND F.USER_ID = #{userId}
+		LEFT JOIN
+			T_SKILL_FRIEND_AUTH SFA
+				ON SFA.SKILL_CODE = #{skillCode}
+				AND SFA.EXAM_CLASS_CODE = #{examClassCode}
+				AND SFA.USER_ID = F.USER_ID
+				AND SFA.FRIEND_ID = U.USER_ID
+		LEFT JOIN
+			T_JOB_TABLE J
+				ON J.JOB_ID = U.JOB_ID
+	</sql>
+
+	<sql id="whereFriend">
+		WHERE
+			U.USER_ID != #{userId}
+		AND U.USER_TYPE_CODE = '0101'
+		AND U.COUNTRY_CODE IS NOT NULL
+		<if test="@org.apache.commons.lang3.StringUtils@isNotEmpty(searchKeyword)">
+		AND (
+			   LOWER(U.NAME)         LIKE CONCAT('%', #{searchKeyword}, '%')
+			OR LOWER(U.FIRSTNAME)    LIKE CONCAT('%', #{searchKeyword}, '%')
+			<!-- OR U.EMAIL        LIKE '%' + #{searchKeyword} + '%' -->
+			OR LOWER(J.JOB_NAME_${language.code}) LIKE CONCAT('%',#{searchKeyword}, '%')
+		)
+		</if>
+	</sql>
+
+	<select id="getMemberCount" parameterType="map" resultType="int">
+		/* evaluation.getMemberCount : 회원 카운트 조회 */
+		SELECT
+			COUNT(*)
+		<include refid="fromMember"/>
+		<include refid="whereFriend"/>
+		AND U.USER_ID NOT IN ( SELECT FRIEND_ID FROM T_FRIEND WHERE USER_ID = #{userId} )
+	</select>
+
+	<select id="getMemberList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.SkillFriendAuth">
+		/* evaluation.getMemberList : 회원 목록 조회 */
+		SELECT
+		<include refid="columnFriend"/>
+		<include refid="fromMember"/>
+		<include refid="whereFriend"/>
+		AND U.USER_ID NOT IN ( SELECT FRIEND_ID FROM T_FRIEND WHERE USER_ID = #{userId} )
+		ORDER BY U.NAME ASC, U.FIRSTNAME ASC
+		OFFSET ${offset} ROW
+		FETCH NEXT ${limit} ROW ONLY
+	</select>
+
+	<sql id="fromMember">
+		FROM
+			T_USER U
+		LEFT JOIN
+			T_SKILL_FRIEND_AUTH SFA
+				ON SFA.SKILL_CODE = #{skillCode}
+				AND SFA.EXAM_CLASS_CODE = #{examClassCode}
+				AND SFA.USER_ID = #{userId}
+				AND SFA.FRIEND_ID = U.USER_ID
+		LEFT JOIN
+			T_JOB_TABLE J
+				ON J.JOB_ID = U.JOB_ID
+	</sql>
+
+	<select id="getReferralMemberList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.SkillFriendAuth">
+		/* evaluation.getReferralMemberList : 추천 회원 목록 조회 */
+		SELECT
+		<include refid="columnFriend"/>
+		<include refid="fromMember"/>
+		JOIN
+			T_HAVE_SKILL HS
+				ON  HS.SKILL_CODE = #{skillCode}
+				AND HS.EXAM_CLASS_CODE = #{examClassCode}
+				AND HS.USER_ID = U.USER_ID
+				AND HS.SKILL_PROGRESS_LEVEL_CODE = '1205'
+		JOIN (
+			SELECT USER_ID
+			FROM T_USER
+			WHERE USER_ID != #{userId}
+			ORDER BY NEWID()
+			OFFSET 0 ROW
+			FETCH NEXT 100 ROW ONLY
+		) U2
+				ON  U2.USER_ID = SFA.USER_ID
+		WHERE
+			U.USER_ID NOT IN ( SELECT FRIEND_ID FROM T_FRIEND WHERE USER_ID = #{userId} )
+			AND U.COUNTRY_CODE IS NOT NULL
+		ORDER BY U.NAME ASC, U.FIRSTNAME ASC
+	</select>
+
+	<select id="getSelfExamTimeoutList" resultType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.getSelfExamTimeoutList : 자가 시험 타임아웃 대상 목록 */
+		SELECT
+			 SE.SELF_EXAM_ID            AS SELF_EXAM_ID
+			,SEPS.SELF_EXAM_PROGRESS_ID AS EXAM_PROGRESS_ID
+			,HS.SKILL_CODE
+			,HS.EXAM_CLASS_CODE
+			,HS.USER_ID
+		FROM
+			T_SELF_EXAM_PROGRESS_STATUS SEPS
+		JOIN
+			T_SKILL_PROGRESS_STATUS SPS
+				ON  SPS.SELF_EXAM_ID = SEPS.SELF_EXAM_ID
+				AND SPS.USER_ID = SEPS.USER_ID
+				AND SPS.EXAM_PROGRESS_STATUS_CODE = SEPS.EXAM_PROGRESS_STATUS_CODE
+		JOIN
+			T_HAVE_SKILL HS
+				ON  HS.SKILL_CODE = SPS.SKILL_CODE
+				AND HS.USER_ID = SPS.USER_ID
+				AND HS.EXAM_CLASS_CODE = SPS.EXAM_CLASS_CODE
+				AND HS.SKILL_PROGRESS_LEVEL_CODE = '1202'
+		JOIN
+			T_SELF_EXAM SE
+				ON  SE.SKILL_CODE = HS.SKILL_CODE
+				AND SE.EXAM_CLASS_CODE = HS.EXAM_CLASS_CODE
+				AND SE.SELF_EXAM_ID = SEPS.SELF_EXAM_ID
+		WHERE
+			SEPS.EXAM_PROGRESS_STATUS_CODE = '1401'
+		AND SEPS.EXAM_LIMIT_TIME <![CDATA[<=]]> GETDATE()
+	</select>
+
+	<update id="updateSelfExamTimeout1" parameterType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.updateSelfExamTimeout1 : 자가 시험 타임아웃 처리 SPS */
+		UPDATE
+			T_SKILL_PROGRESS_STATUS
+		SET
+			 EXAM_PROGRESS_STATUS_CODE = '1403'
+			,UPDATED_DATE              = GETDATE()
+		WHERE
+			USER_ID         = #{userId}
+		AND SKILL_CODE      = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+	</update>
+
+	<update id="updateSelfExamTimeout2" parameterType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.updateSelfExamTimeout2 : 자가 시험 타임아웃 처리 SEPS */
+		UPDATE
+			T_SELF_EXAM_PROGRESS_STATUS
+		SET
+			 EXAM_PROGRESS_STATUS_CODE = '1403'
+			,UPDATED_DATE              = GETDATE()
+		WHERE
+			SELF_EXAM_ID = #{selfExamId}
+		AND USER_ID      = #{userId}
+	</update>
+
+	<select id="getSelfExamWaitList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.getSelfExamWaitList : 자가 시험 타임아웃/불합격 해제 대상 확인 */
+		SELECT
+			 SE.SELF_EXAM_ID            AS SELF_EXAM_ID
+			,SEPS.SELF_EXAM_PROGRESS_ID AS EXAM_PROGRESS_ID
+			,HS.SKILL_CODE
+			,HS.EXAM_CLASS_CODE
+			,HS.USER_ID
+		FROM
+			T_SELF_EXAM_PROGRESS_STATUS SEPS
+		JOIN
+			T_SKILL_PROGRESS_STATUS SPS
+				ON  SPS.SELF_EXAM_ID = SEPS.SELF_EXAM_ID
+				AND SPS.USER_ID = SEPS.USER_ID
+				AND SPS.EXAM_PROGRESS_STATUS_CODE = SEPS.EXAM_PROGRESS_STATUS_CODE
+		JOIN
+			T_HAVE_SKILL HS
+				ON  HS.SKILL_CODE = SPS.SKILL_CODE
+				AND HS.USER_ID = SPS.USER_ID
+				AND HS.EXAM_CLASS_CODE = SPS.EXAM_CLASS_CODE
+				AND HS.SKILL_PROGRESS_LEVEL_CODE = '1202'
+		JOIN
+			T_SELF_EXAM SE
+				ON  SE.SKILL_CODE = HS.SKILL_CODE
+				AND SE.EXAM_CLASS_CODE = HS.EXAM_CLASS_CODE
+				AND SE.SELF_EXAM_ID = SEPS.SELF_EXAM_ID
+		WHERE
+			SEPS.EXAM_PROGRESS_STATUS_CODE = #{progressStatus}
+		AND SEPS.EXAM_LIMIT_TIME <![CDATA[<=]]> DATEADD(DAY, -2, GETDATE())
+	</select>
+
+	<update id="updateSelfExamWait1" parameterType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.updateSelfExamWait1 : 자가 시험 타임아웃/불합격 해제 SPS */
+		UPDATE
+			T_SKILL_PROGRESS_STATUS
+		SET
+			 EXAM_PROGRESS_STATUS_CODE = '1401'
+			,UPDATED_DATE              = GETDATE()
+		WHERE
+			USER_ID         = #{userId}
+		AND SKILL_CODE      = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+	</update>
+
+	<update id="updateSelfExamWait2" parameterType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.updateSelfExamWait2 : 자가 시험 타임아웃/불합격 해제 SEPS */
+		UPDATE
+			T_SELF_EXAM_PROGRESS_STATUS
+		SET
+			 EXAM_PROGRESS_STATUS_CODE = '1401'
+			,EXAM_START_TIME = NULL
+			,EXAM_LIMIT_TIME = NULL
+			,FINAL_SCORE = NULL 
+			,IS_COMPLETE = 'N'
+			,IS_PASS = NULL 
+			,EXAM_EVALUATION = NULL 
+			,EXAM_EVALUATION_CONTENTS = NULL
+			,UPDATED_DATE              = GETDATE()
+		WHERE
+			SELF_EXAM_ID = #{selfExamId}
+		AND USER_ID      = #{userId}
+	</update>
+
+	<delete id="deleteSelfExamQuestion" parameterType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.deleteSelfExamQuestion : 자가 시험 할당된 문제 삭제 */
+		DELETE
+		FROM
+			T_PROGRESS_SELF_EXAM_QUESTION
+		WHERE
+			SELF_EXAM_PROGRESS_ID = #{examProgressId}
+	</delete>
+
+	<delete id="deleteSelfExamAnswer" parameterType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.deleteSelfExamAnswer : 자가 시험 할당된 문제 답변 삭제 */
+		DELETE
+		FROM
+			T_PROGRESS_SELF_EXAM_ANSWER
+		WHERE
+			SELF_EXAM_PROGRESS_ID  = #{examProgressId}
+	</delete>
+
+
+	<select id="getSkillExamTimeoutList" resultType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.getSkillExamTimeoutList : 기술 시험 타임아웃 대상 목록 */
+		SELECT
+			 SE.SKILL_EXAM_ID            AS SKILL_EXAM_ID
+			,SEPS.SKILL_EXAM_PROGRESS_ID AS EXAM_PROGRESS_ID
+			,HS.SKILL_CODE
+			,HS.EXAM_CLASS_CODE
+			,HS.USER_ID
+		FROM
+			T_SKILL_EXAM_PROGRESS_STATUS SEPS
+		JOIN
+			T_SKILL_PROGRESS_STATUS SPS
+				ON  SPS.SKILL_EXAM_ID = SEPS.SKILL_EXAM_ID
+				AND SPS.USER_ID = SEPS.USER_ID
+				AND SPS.EXAM_PROGRESS_STATUS_CODE = SEPS.EXAM_PROGRESS_STATUS_CODE
+		JOIN
+			T_HAVE_SKILL HS
+				ON  HS.SKILL_CODE = SPS.SKILL_CODE
+				AND HS.USER_ID = SPS.USER_ID
+				AND HS.EXAM_CLASS_CODE = SPS.EXAM_CLASS_CODE
+				AND HS.SKILL_PROGRESS_LEVEL_CODE = '1203'
+		JOIN
+			T_SKILL_EXAM SE
+				ON  SE.SKILL_CODE = HS.SKILL_CODE
+				AND SE.EXAM_CLASS_CODE = HS.EXAM_CLASS_CODE
+				AND SE.SKILL_EXAM_ID = SEPS.SKILL_EXAM_ID
+		WHERE
+			SEPS.EXAM_PROGRESS_STATUS_CODE = '1401'
+		AND SEPS.EXAM_LIMIT_TIME <![CDATA[<=]]> GETDATE()
+	</select>
+
+	<update id="updateSkillExamTimeout1">
+		/* evaluation.updateSkillExamTimeout1 : 기술 시험 타임아웃 처리 SPS */
+		UPDATE
+			T_SKILL_PROGRESS_STATUS
+		SET
+			 EXAM_PROGRESS_STATUS_CODE = '1403'
+			,UPDATED_DATE              = GETDATE()
+		WHERE
+			USER_ID         = #{userId}
+		AND SKILL_CODE      = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+	</update>
+
+	<update id="updateSkillExamTimeout2">
+		/* evaluation.updateSkillExamTimeout2 : 기술 시험 타임아웃 처리 SEPS */
+		UPDATE
+			T_SKILL_EXAM_PROGRESS_STATUS
+		SET
+			 EXAM_PROGRESS_STATUS_CODE = '1403'
+			,UPDATED_DATE              = GETDATE()
+		WHERE
+			SKILL_EXAM_ID = #{skillExamId}
+		AND USER_ID       = #{userId}
+	</update>
+
+	<select id="getSkillExamWaitList" parameterType="map" resultType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.getSkillExamWaitList : 기술 시험 타임아웃/불합격 해제 대상 확인 */
+		SELECT
+			 SE.SKILL_EXAM_ID            AS SKILL_EXAM_ID
+			,SEPS.SKILL_EXAM_PROGRESS_ID AS EXAM_PROGRESS_ID
+			,HS.SKILL_CODE
+			,HS.EXAM_CLASS_CODE
+			,HS.USER_ID
+		FROM
+			T_SKILL_EXAM_PROGRESS_STATUS SEPS
+		JOIN
+			T_SKILL_PROGRESS_STATUS SPS
+				ON  SPS.SKILL_EXAM_ID = SEPS.SKILL_EXAM_ID
+				AND SPS.USER_ID = SEPS.USER_ID
+				AND SPS.EXAM_PROGRESS_STATUS_CODE = SEPS.EXAM_PROGRESS_STATUS_CODE
+		JOIN
+			T_HAVE_SKILL HS
+				ON  HS.SKILL_CODE = SPS.SKILL_CODE
+				AND HS.USER_ID = SPS.USER_ID
+				AND HS.EXAM_CLASS_CODE = SPS.EXAM_CLASS_CODE
+				AND HS.SKILL_PROGRESS_LEVEL_CODE = '1203'
+		JOIN
+			T_SKILL_EXAM SE
+				ON  SE.SKILL_CODE = HS.SKILL_CODE
+				AND SE.EXAM_CLASS_CODE = HS.EXAM_CLASS_CODE
+				AND SE.SKILL_EXAM_ID = SEPS.SKILL_EXAM_ID
+		WHERE
+			SEPS.EXAM_PROGRESS_STATUS_CODE = #{progressStatus}
+		AND SEPS.EXAM_LIMIT_TIME <![CDATA[<=]]> DATEADD(DAY, -2, GETDATE())
+	</select>
+
+	<update id="updateSkillExamWait1" parameterType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.updateSkillExamWait1 : 기술 시험 타임아웃/불합격 해제 SPS */
+		UPDATE
+			T_SKILL_PROGRESS_STATUS
+		SET
+			 EXAM_PROGRESS_STATUS_CODE = '1401'
+			,UPDATED_DATE              = GETDATE()
+		WHERE
+			USER_ID         = #{userId}
+		AND SKILL_CODE      = #{skillCode}
+		AND EXAM_CLASS_CODE = #{examClassCode}
+	</update>
+
+	<update id="updateSkillExamWait2" parameterType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.updateSkillExamWait2 : 기술 시험 타임아웃/불합격 해제 SEPS */
+		UPDATE
+			T_SKILL_EXAM_PROGRESS_STATUS
+		SET
+			 EXAM_PROGRESS_STATUS_CODE = '1401'
+			,EXAM_START_TIME = NULL
+			,EXAM_LIMIT_TIME = NULL
+			,FINAL_SCORE = NULL 
+			,IS_COMPLETE = 'N'
+			,IS_PASS = NULL 
+			,EXAM_EVALUATION = NULL 
+			,EXAM_EVALUATION_CONTENTS = NULL
+			,UPDATED_DATE              = GETDATE()
+		WHERE
+			SKILL_EXAM_ID = #{skillExamId}
+		AND USER_ID       = #{userId}
+	</update>
+
+	<delete id="deleteSkillExamQuestion" parameterType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.deleteSkillExamQuestion : 기술 시험 할당된 문제 삭제 */
+		DELETE
+		FROM
+			T_PROGRESS_SKILL_EXAM_QUESTION
+		WHERE
+			SKILL_EXAM_PROGRESS_ID = #{examProgressId}
+	</delete>
+
+	<delete id="deleteSkillExamAnswer" parameterType="com.iscreammedia.clic.front.domain.Exam">
+		/* evaluation.deleteSkillExamAnswer : 기술 시험 할당된 문제 답변 삭제 */
+		DELETE
+		FROM
+			T_PROGRESS_SKILL_EXAM_ANSWER
+		WHERE
+			SKILL_EXAM_PROGRESS_ID = #{examProgressId}
+	</delete>
+	
+	<select id="getNowTime" resultType="Date">
+		/* evaluation.getNowTime : DB 현재시간 가져오기 */
+		SELECT
+			GETDATE() AS EXAM_NOW_TIME
+	</select>
+</mapper>

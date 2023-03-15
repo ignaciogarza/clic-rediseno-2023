@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iscreammedia.clic.front.repository.BatchRepository">
+
+	<insert id="insertBatchErrorLog" parameterType="com.iscreammedia.clic.front.domain.BatchLog">
+		/* batch.insertBatchErrorLog : 배치 로그 등록 */
+		INSERT INTO T_BATCH_LOG (SERVER_NAME, JOB_NAME, JOB_START_DATE, JOB_END_DATE, JOB_TIME, BATCH_STATUS_CODE, ERROR_LOG)
+		VALUES(
+			#{serverName}
+			,#{jobName}
+			,#{jobStartDate}
+			,#{jobEndDate}
+			,#{jobTime}
+			,'2799'
+			,#{errorLog}
+		)
+	</insert>
+</mapper>
